@@ -12,10 +12,20 @@ _engine = None
 _sessionmaker: async_sessionmaker[AsyncSession] | None = None
 
 
+def _to_async_url(url: str) -> str:
+    if url.startswith("postgresql+asyncpg://"):
+        return url
+    if url.startswith("postgresql://"):
+        return "postgresql+asyncpg://" + url[len("postgresql://"):]
+    if url.startswith("postgres://"):
+        return "postgresql+asyncpg://" + url[len("postgres://"):]
+    return url
+
+
 def _get_sessionmaker(settings: Settings) -> async_sessionmaker[AsyncSession]:
     global _engine, _sessionmaker
     if _sessionmaker is None:
-        _engine = create_async_engine(settings.database_url, pool_pre_ping=True)
+        _engine = create_async_engine(_to_async_url(settings.database_url), pool_pre_ping=True)
         _sessionmaker = async_sessionmaker(_engine, expire_on_commit=False)
     return _sessionmaker
 

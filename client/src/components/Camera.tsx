@@ -20,6 +20,17 @@ export function Camera({
   const [cameraOpen, setCameraOpen] = useState(false);
   const [cameraError, setCameraError] = useState<string | null>(null);
   const [flashKey, setFlashKey] = useState(0);
+  const [lastShotUrl, setLastShotUrl] = useState<string | null>(null);
+  const [shotCount, setShotCount] = useState(0);
+  const lastShotUrlRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    lastShotUrlRef.current = lastShotUrl;
+  }, [lastShotUrl]);
+
+  useEffect(() => () => {
+    if (lastShotUrlRef.current) URL.revokeObjectURL(lastShotUrlRef.current);
+  }, []);
 
   const addInputFiles = (files: FileList | null) => {
     if (!files) return;
@@ -43,6 +54,11 @@ export function Camera({
     stopStream();
     setCameraOpen(false);
     setCameraError(null);
+    setLastShotUrl((prev) => {
+      if (prev) URL.revokeObjectURL(prev);
+      return null;
+    });
+    setShotCount(0);
   }, [stopStream]);
 
   useEffect(() => () => stopStream(), [stopStream]);
@@ -93,6 +109,12 @@ export function Camera({
       (blob) => {
         if (!blob) return;
         const file = new File([blob], `page-${Date.now()}.jpg`, { type: 'image/jpeg' });
+        const url = URL.createObjectURL(blob);
+        setLastShotUrl((prev) => {
+          if (prev) URL.revokeObjectURL(prev);
+          return url;
+        });
+        setShotCount((n) => n + 1);
         onFiles([file]);
       },
       'image/jpeg',
@@ -285,18 +307,72 @@ export function Camera({
                 40% { transform: scale(0.86); }
                 100% { transform: scale(1); }
               }
+              @keyframes pg-thumb-pop {
+                0% { transform: scale(0.4); opacity: 0; }
+                60% { transform: scale(1.08); opacity: 1; }
+                100% { transform: scale(1); opacity: 1; }
+              }
             `}</style>
           </div>
           <div
             style={{
               padding: '20px 16px 28px',
-              display: 'flex',
+              display: 'grid',
+              gridTemplateColumns: '1fr auto 1fr',
               alignItems: 'center',
-              justifyContent: 'center',
-              gap: 24,
+              gap: 16,
               color: 'white',
             }}
           >
+            <div style={{ justifySelf: 'start' }}>
+              {lastShotUrl ? (
+                <div
+                  key={shotCount}
+                  style={{
+                    position: 'relative',
+                    width: 56,
+                    height: 56,
+                    borderRadius: 12,
+                    overflow: 'hidden',
+                    border: '2px solid rgba(255,255,255,0.85)',
+                    boxShadow: '0 4px 12px rgba(0,0,0,0.4)',
+                    animation: 'pg-thumb-pop 360ms cubic-bezier(.2,.7,.3,1)',
+                  }}
+                  aria-label="Latest captured photo"
+                >
+                  <img
+                    src={lastShotUrl}
+                    alt=""
+                    style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+                  />
+                  {shotCount > 1 && (
+                    <div
+                      style={{
+                        position: 'absolute',
+                        top: -6,
+                        right: -6,
+                        minWidth: 20,
+                        height: 20,
+                        padding: '0 5px',
+                        borderRadius: 999,
+                        background: 'var(--green)',
+                        color: 'white',
+                        fontSize: 11,
+                        fontWeight: 800,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        border: '2px solid white',
+                      }}
+                    >
+                      {shotCount}
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div style={{ width: 56, height: 56 }} />
+              )}
+            </div>
             <button
               onClick={captureFrame}
               aria-label="Capture page"
@@ -311,6 +387,7 @@ export function Camera({
                 animation: flashKey > 0 ? 'pg-shutter-press 320ms ease-out' : undefined,
               }}
             />
+            <div style={{ width: 56, height: 56, justifySelf: 'end' }} />
           </div>
         </div>
       )}

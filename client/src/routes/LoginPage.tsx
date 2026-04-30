@@ -1,5 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 
+import { markEntered } from '../App';
 import { GoogleIcon } from '../components/AuthNav';
 import { Sage } from '../components/Sage';
 import { Icon } from '../components/icons';
@@ -7,6 +8,10 @@ import { PGButton } from '../components/primitives';
 
 export default function LoginPage() {
   const navigate = useNavigate();
+  const continueAsGuest = () => {
+    markEntered();
+    navigate('/app');
+  };
 
   return (
     <div className="pg-shell login-shell">
@@ -96,7 +101,7 @@ export default function LoginPage() {
           <div style={{ flex: 1, height: 2, background: 'var(--hairline)' }} />
         </div>
 
-        <PGButton variant="secondary" size="lg" fullWidth icon={<Icon.Camera s={18} />} onClick={() => navigate('/app')}>
+        <PGButton variant="secondary" size="lg" fullWidth icon={<Icon.Camera s={18} />} onClick={continueAsGuest}>
           Continue as guest
         </PGButton>
 

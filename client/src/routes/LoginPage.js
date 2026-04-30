@@ -1,11 +1,16 @@
 import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
 import { useNavigate } from 'react-router-dom';
+import { markEntered } from '../App';
 import { GoogleIcon } from '../components/AuthNav';
 import { Sage } from '../components/Sage';
 import { Icon } from '../components/icons';
 import { PGButton } from '../components/primitives';
 export default function LoginPage() {
     const navigate = useNavigate();
+    const continueAsGuest = () => {
+        markEntered();
+        navigate('/app');
+    };
     return (_jsxs("div", { className: "pg-shell login-shell", children: [_jsxs("div", { className: "polka-yellow", style: {
                     position: 'relative',
                     height: 280,
@@ -44,7 +49,7 @@ export default function LoginPage() {
                             fontSize: 14,
                             textTransform: 'none',
                             letterSpacing: 0,
-                        }, children: [_jsx(GoogleIcon, {}), "Continue with Google"] }), _jsxs("div", { style: { display: 'flex', alignItems: 'center', gap: 12, margin: '22px 0' }, children: [_jsx("div", { style: { flex: 1, height: 2, background: 'var(--hairline)' } }), _jsx("span", { className: "t-mono", style: { color: 'var(--ink-3)', fontSize: 11 }, children: "OR" }), _jsx("div", { style: { flex: 1, height: 2, background: 'var(--hairline)' } })] }), _jsx(PGButton, { variant: "secondary", size: "lg", fullWidth: true, icon: _jsx(Icon.Camera, { s: 18 }), onClick: () => navigate('/app'), children: "Continue as guest" }), _jsx("div", { style: { marginTop: 18, textAlign: 'center' }, children: _jsx("button", { onClick: () => navigate('/'), style: { background: 'transparent', border: 0, color: 'var(--green-dark)', fontWeight: 900, cursor: 'pointer', fontSize: 13, textTransform: 'uppercase', letterSpacing: '0.04em' }, children: "See how PocketGuru works" }) })] })] }));
+                        }, children: [_jsx(GoogleIcon, {}), "Continue with Google"] }), _jsxs("div", { style: { display: 'flex', alignItems: 'center', gap: 12, margin: '22px 0' }, children: [_jsx("div", { style: { flex: 1, height: 2, background: 'var(--hairline)' } }), _jsx("span", { className: "t-mono", style: { color: 'var(--ink-3)', fontSize: 11 }, children: "OR" }), _jsx("div", { style: { flex: 1, height: 2, background: 'var(--hairline)' } })] }), _jsx(PGButton, { variant: "secondary", size: "lg", fullWidth: true, icon: _jsx(Icon.Camera, { s: 18 }), onClick: continueAsGuest, children: "Continue as guest" }), _jsx("div", { style: { marginTop: 18, textAlign: 'center' }, children: _jsx("button", { onClick: () => navigate('/'), style: { background: 'transparent', border: 0, color: 'var(--green-dark)', fontWeight: 900, cursor: 'pointer', fontSize: 13, textTransform: 'uppercase', letterSpacing: '0.04em' }, children: "See how PocketGuru works" }) })] })] }));
 }
 function AccentStar() {
     return (_jsx("div", { style: { position: 'absolute', top: 28, left: 78, transform: 'rotate(-12deg)', color: 'var(--pink)' }, children: _jsx(Icon.Star, { s: 34 }) }));

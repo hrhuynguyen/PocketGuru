@@ -52,6 +52,37 @@ export function useProcess() {
         },
     });
 }
+export function useRenameDocument() {
+    const qc = useQueryClient();
+    return useMutation({
+        mutationFn: ({ id, title }) => apiFetch(`/documents/${id}`, {
+            method: 'PATCH',
+            body: JSON.stringify({ title }),
+            headers: { 'Content-Type': 'application/json' },
+        }),
+        onSuccess: (updated, { id }) => {
+            qc.invalidateQueries({ queryKey: keys.documents });
+            qc.invalidateQueries({ queryKey: keys.document(id) });
+            qc.setQueryData(keys.documents, (prev) => prev
+                ? {
+                    ...prev,
+                    items: prev.items.map((it) => it.id === updated.id ? { ...it, title: updated.title } : it),
+                }
+                : prev);
+        },
+    });
+}
+export function useDeleteDocument() {
+    const qc = useQueryClient();
+    return useMutation({
+        mutationFn: (id) => apiFetch(`/documents/${id}`, { method: 'DELETE' }),
+        onSuccess: (_data, id) => {
+            qc.invalidateQueries({ queryKey: keys.documents });
+            qc.removeQueries({ queryKey: keys.document(id) });
+            qc.setQueryData(keys.documents, (prev) => prev ? { ...prev, items: prev.items.filter((it) => it.id !== id) } : prev);
+        },
+    });
+}
 export function useSubmitAttempt() {
     const qc = useQueryClient();
     return useMutation({

@@ -10,6 +10,7 @@ export function Camera({ disabled, uploadInputId, onFiles, }) {
     const [isDragOver, setIsDragOver] = useState(false);
     const [cameraOpen, setCameraOpen] = useState(false);
     const [cameraError, setCameraError] = useState(null);
+    const [flashKey, setFlashKey] = useState(0);
     const addInputFiles = (files) => {
         if (!files)
             return;
@@ -79,6 +80,13 @@ export function Camera({ disabled, uploadInputId, onFiles, }) {
         if (!ctx)
             return;
         ctx.drawImage(video, 0, 0, w, h);
+        setFlashKey((k) => k + 1);
+        if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
+            try {
+                navigator.vibrate?.(15);
+            }
+            catch { /* ignore */ }
+        }
         canvas.toBlob((blob) => {
             if (!blob)
                 return;
@@ -147,14 +155,31 @@ export function Camera({ disabled, uploadInputId, onFiles, }) {
                                     alignItems: 'center',
                                     justifyContent: 'center',
                                     cursor: 'pointer',
-                                }, children: _jsx(Icon.Close, { s: 18 }) })] }), _jsx("div", { style: { flex: 1, position: 'relative', overflow: 'hidden' }, children: _jsx("video", { ref: videoRef, autoPlay: true, playsInline: true, muted: true, style: {
-                                position: 'absolute',
-                                inset: 0,
-                                width: '100%',
-                                height: '100%',
-                                objectFit: 'contain',
-                                background: 'black',
-                            } }) }), _jsx("div", { style: {
+                                }, children: _jsx(Icon.Close, { s: 18 }) })] }), _jsxs("div", { style: { flex: 1, position: 'relative', overflow: 'hidden' }, children: [_jsx("video", { ref: videoRef, autoPlay: true, playsInline: true, muted: true, style: {
+                                    position: 'absolute',
+                                    inset: 0,
+                                    width: '100%',
+                                    height: '100%',
+                                    objectFit: 'contain',
+                                    background: 'black',
+                                } }), flashKey > 0 && (_jsx("div", { "aria-hidden": true, style: {
+                                    position: 'absolute',
+                                    inset: 0,
+                                    background: 'white',
+                                    pointerEvents: 'none',
+                                    animation: 'pg-shutter-flash 320ms ease-out forwards',
+                                } }, flashKey)), _jsx("style", { children: `
+              @keyframes pg-shutter-flash {
+                0% { opacity: 0; }
+                12% { opacity: 1; }
+                100% { opacity: 0; }
+              }
+              @keyframes pg-shutter-press {
+                0% { transform: scale(1); }
+                40% { transform: scale(0.88); }
+                100% { transform: scale(1); }
+              }
+            ` })] }), _jsx("div", { style: {
                             padding: '20px 16px 28px',
                             display: 'flex',
                             alignItems: 'center',
@@ -169,5 +194,6 @@ export function Camera({ disabled, uploadInputId, onFiles, }) {
                                 border: '6px solid rgba(255,255,255,0.5)',
                                 cursor: 'pointer',
                                 boxShadow: '0 6px 0 rgba(0,0,0,0.3)',
-                            } }) })] }))] }));
+                                animation: flashKey > 0 ? 'pg-shutter-press 220ms ease-out' : undefined,
+                            } }, `shutter-${flashKey}`) })] }))] }));
 }

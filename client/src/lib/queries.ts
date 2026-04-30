@@ -16,8 +16,13 @@ export type AttemptCreate = components['schemas']['AttemptCreate'];
 export type AttemptResult = components['schemas']['AttemptResult'];
 export type AttemptDetail = components['schemas']['AttemptDetail'];
 export type MeResponse =
-  | components['schemas']['AuthMeAnonymous']
-  | components['schemas']['AuthMeAuthenticated'];
+  | { anonymous: true }
+  | {
+      anonymous: false;
+      email: string;
+      name?: string | null;
+      picture?: string | null;
+    };
 export type ProcessUpload = {
   file: File;
   title?: string;
@@ -83,6 +88,50 @@ export function useProcess(): UseMutationResult<
     onSuccess: (data) => {
       qc.invalidateQueries({ queryKey: keys.documents });
       qc.setQueryData(keys.document(data.document_id), data);
+    },
+  });
+}
+
+export function useRenameDocument(): UseMutationResult<
+  DocumentSummary,
+  Error,
+  { id: string; title: string }
+> {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, title }) =>
+      apiFetch<DocumentSummary>(`/documents/${id}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ title }),
+        headers: { 'Content-Type': 'application/json' },
+      }),
+    onSuccess: (updated, { id }) => {
+      qc.invalidateQueries({ queryKey: keys.documents });
+      qc.invalidateQueries({ queryKey: keys.document(id) });
+      qc.setQueryData<DocumentList>(keys.documents, (prev) =>
+        prev
+          ? {
+              ...prev,
+              items: prev.items.map((it) =>
+                it.id === updated.id ? { ...it, title: updated.title } : it,
+              ),
+            }
+          : prev,
+      );
+    },
+  });
+}
+
+export function useDeleteDocument(): UseMutationResult<void, Error, string> {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id) => apiFetch<void>(`/documents/${id}`, { method: 'DELETE' }),
+    onSuccess: (_data, id) => {
+      qc.invalidateQueries({ queryKey: keys.documents });
+      qc.removeQueries({ queryKey: keys.document(id) });
+      qc.setQueryData<DocumentList>(keys.documents, (prev) =>
+        prev ? { ...prev, items: prev.items.filter((it) => it.id !== id) } : prev,
+      );
     },
   });
 }

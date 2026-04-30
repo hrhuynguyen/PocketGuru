@@ -108,6 +108,27 @@ export const Icon = {
       <path d="m6 9 6 6 6-6" />
     </svg>
   ),
+  More: ({ s = 18 }: IconProps) => (
+    <svg width={s} height={s} viewBox="0 0 24 24" fill="currentColor">
+      <circle cx="12" cy="5" r="2" />
+      <circle cx="12" cy="12" r="2" />
+      <circle cx="12" cy="19" r="2" />
+    </svg>
+  ),
+  Edit: ({ s = 18 }: IconProps) => (
+    <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M4 20h4l10-10-4-4L4 16z" />
+      <path d="m14 6 4 4" />
+    </svg>
+  ),
+  Trash: ({ s = 18 }: IconProps) => (
+    <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M3 6h18" />
+      <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+      <path d="M6 6v14a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V6" />
+      <path d="M10 11v6M14 11v6" />
+    </svg>
+  ),
   Image: ({ s = 18 }: IconProps) => (
     <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
       <rect x="3" y="3" width="18" height="18" rx="3" />

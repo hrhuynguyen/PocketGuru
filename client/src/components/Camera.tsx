@@ -19,6 +19,7 @@ export function Camera({
   const [isDragOver, setIsDragOver] = useState(false);
   const [cameraOpen, setCameraOpen] = useState(false);
   const [cameraError, setCameraError] = useState<string | null>(null);
+  const [flashKey, setFlashKey] = useState(0);
 
   const addInputFiles = (files: FileList | null) => {
     if (!files) return;
@@ -87,6 +88,7 @@ export function Camera({
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
     ctx.drawImage(video, 0, 0, w, h);
+    setFlashKey((k) => k + 1);
     canvas.toBlob(
       (blob) => {
         if (!blob) return;
@@ -259,6 +261,31 @@ export function Camera({
                 background: 'black',
               }}
             />
+            {flashKey > 0 && (
+              <div
+                key={flashKey}
+                aria-hidden
+                style={{
+                  position: 'absolute',
+                  inset: 0,
+                  background: 'white',
+                  pointerEvents: 'none',
+                  animation: 'pg-camera-flash 320ms ease-out forwards',
+                }}
+              />
+            )}
+            <style>{`
+              @keyframes pg-camera-flash {
+                0% { opacity: 0; }
+                8% { opacity: 1; }
+                100% { opacity: 0; }
+              }
+              @keyframes pg-shutter-press {
+                0% { transform: scale(1); }
+                40% { transform: scale(0.86); }
+                100% { transform: scale(1); }
+              }
+            `}</style>
           </div>
           <div
             style={{
@@ -281,6 +308,7 @@ export function Camera({
                 border: '6px solid rgba(255,255,255,0.5)',
                 cursor: 'pointer',
                 boxShadow: '0 6px 0 rgba(0,0,0,0.3)',
+                animation: flashKey > 0 ? 'pg-shutter-press 320ms ease-out' : undefined,
               }}
             />
           </div>

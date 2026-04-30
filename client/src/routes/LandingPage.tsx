@@ -1,17 +1,12 @@
 import { useNavigate } from 'react-router-dom';
 import type { ReactNode } from 'react';
 
-import { markEntered } from '../App';
 import { Sage } from '../components/Sage';
 import { Icon } from '../components/icons';
 import { PGButton } from '../components/primitives';
 
 export default function LandingPage() {
   const navigate = useNavigate();
-  const continueAsGuest = () => {
-    markEntered();
-    navigate('/app');
-  };
 
   return (
     <div className="landing-page">
@@ -58,7 +53,7 @@ export default function LandingPage() {
                 <PGButton variant="primary" size="lg" onClick={() => navigate('/login')}>
                   Sign in with Google
                 </PGButton>
-                <PGButton variant="secondary" size="lg" icon={<Icon.Camera s={20} />} onClick={continueAsGuest}>
+                <PGButton variant="secondary" size="lg" icon={<Icon.Camera s={20} />} onClick={() => navigate('/app')}>
                   Continue as guest
                 </PGButton>
               </div>

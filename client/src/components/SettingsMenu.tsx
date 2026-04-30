@@ -1,7 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 
-import { clearEntered } from '../App';
 import { GoogleIcon } from './AuthNav';
 import { Icon } from './icons';
 import { PGButton, PGIconBtn } from './primitives';
@@ -10,7 +8,6 @@ import { useLogout, useMe } from '../lib/queries';
 export function SettingsMenu() {
   const me = useMe();
   const logout = useLogout();
-  const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement | null>(null);
 
@@ -62,13 +59,7 @@ export function SettingsMenu() {
                 icon={<Icon.Close s={13} />}
                 disabled={logout.isPending}
                 onClick={() => {
-                  logout.mutate(undefined, {
-                    onSuccess: () => {
-                      clearEntered();
-                      setOpen(false);
-                      navigate('/');
-                    },
-                  });
+                  logout.mutate(undefined, { onSuccess: () => setOpen(false) });
                 }}
               >
                 Sign out

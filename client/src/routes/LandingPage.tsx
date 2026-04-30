@@ -63,15 +63,6 @@ export default function LandingPage() {
               >
                 See how it works ↓
               </button>
-              <div className="landing-proof">
-                <AvatarStack />
-                <div>
-                  <div className="landing-stars">
-                    {[0, 1, 2, 3, 4].map((i) => <Icon.Star key={i} s={14} />)}
-                  </div>
-                  <div>4.9 · 24,000+ students studying smarter</div>
-                </div>
-              </div>
             </div>
             <div className="landing-phone-wrap">
               <PhoneMock />
@@ -81,13 +72,6 @@ export default function LandingPage() {
               <div className="landing-cloud">+10 ATP earned</div>
             </div>
           </div>
-        </section>
-
-        <section className="landing-strip">
-          <span>Loved by students at</span>
-          {['Stanford', 'MIT', 'Berkeley', 'NYU', 'UCLA', 'Oxford'].map((school) => (
-            <strong key={school}>{school}</strong>
-          ))}
         </section>
 
         <section id="how" className="landing-section">
@@ -124,17 +108,8 @@ export default function LandingPage() {
           </div>
         </section>
 
-        <section className="landing-section landing-section-white">
-          <SectionHeading title="Students get it done." />
-          <div className="landing-testimonials">
-            <Testimonial tone="yellow" name="Maya · Pre-med" text="I snapped my bio notes and used the quiz to find exactly what I still needed to review." />
-            <Testimonial tone="blue" name="Jordan · CS junior" text="The concept maps make algorithms click faster than rereading the same paragraph." />
-            <Testimonial tone="pink" name="Priya · Law student" text="Source-cited quizzes help me trust the answer because I can check the original passage." />
-          </div>
-        </section>
-
         <section id="pricing" className="landing-section landing-pricing">
-          <SectionHeading eyebrow="Pricing" title="Free. Forever. Really." />
+          <SectionHeading title="Free. Forever. Really." />
           <p>Unlimited snaps and unlimited quizzes. Premium study rooms and offline mode are planned for later.</p>
           <PGButton variant="primary" size="lg" icon={<Icon.Camera s={20} />} onClick={() => navigate('/login')}>
             Get started free
@@ -178,14 +153,6 @@ function FloatingShape({ className, kind }: { className: string; kind: 'star' | 
       {kind === 'bolt' && <Icon.Lightning s={34} />}
       {kind === 'dot' && <span className="dot" />}
       {kind === 'square' && <span className="square" />}
-    </div>
-  );
-}
-
-function AvatarStack() {
-  return (
-    <div className="landing-avatar-stack">
-      {['M', 'J', 'P', 'A'].map((initial, i) => <span key={initial} className={`avatar-${i}`}>{initial}</span>)}
     </div>
   );
 }
@@ -238,12 +205,3 @@ function FeatureCard({ tone, icon, title, body }: { tone: string; icon: ReactNod
   );
 }
 
-function Testimonial({ tone, name, text }: { tone: string; name: string; text: string }) {
-  return (
-    <div className={`landing-testimonial tone-${tone}`}>
-      <div>{[0, 1, 2, 3, 4].map((i) => <Icon.Star key={i} s={14} />)}</div>
-      <p>&quot;{text}&quot;</p>
-      <strong>{name}</strong>
-    </div>
-  );
-}

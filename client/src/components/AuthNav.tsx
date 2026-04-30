@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 import { Icon } from './icons';
 import { PGButton } from './primitives';
@@ -7,6 +8,7 @@ import { useLogout, useMe } from '../lib/queries';
 export function AuthNav() {
   const me = useMe();
   const logout = useLogout();
+  const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement | null>(null);
 
@@ -90,7 +92,12 @@ export function AuthNav() {
             icon={<Icon.Close s={13} />}
             disabled={logout.isPending}
             onClick={() => {
-              logout.mutate(undefined, { onSuccess: () => setOpen(false) });
+              logout.mutate(undefined, {
+                onSuccess: () => {
+                  setOpen(false);
+                  navigate('/');
+                },
+              });
             }}
           >
             Sign out

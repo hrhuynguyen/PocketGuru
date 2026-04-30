@@ -1,13 +1,14 @@
 import { useEffect, useRef, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 import { GoogleIcon } from './AuthNav';
 import { Icon } from './icons';
 import { PGButton, PGIconBtn } from './primitives';
-import { useLogout, useMe } from '../lib/queries';
+import { useMe } from '../lib/queries';
 
 export function SettingsMenu() {
   const me = useMe();
-  const logout = useLogout();
+  const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement | null>(null);
 
@@ -56,13 +57,13 @@ export function SettingsMenu() {
                 variant="secondary"
                 size="sm"
                 fullWidth
-                icon={<Icon.Close s={13} />}
-                disabled={logout.isPending}
+                icon={<Icon.Library s={14} />}
                 onClick={() => {
-                  logout.mutate(undefined, { onSuccess: () => setOpen(false) });
+                  setOpen(false);
+                  navigate('/');
                 }}
               >
-                Sign out
+                Homepage
               </PGButton>
             </>
           ) : (

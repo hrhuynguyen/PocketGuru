@@ -2,7 +2,7 @@ from datetime import datetime
 from typing import Literal
 from uuid import UUID
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 
 from app.schemas.quiz import Quiz
 from app.schemas.study_guide import StudyGuide
@@ -26,10 +26,6 @@ class DocumentSummary(BaseModel):
 class DocumentList(BaseModel):
     items: list[DocumentSummary]
     next_cursor: str | None = None
-
-
-class DocumentUpdate(BaseModel):
-    title: str = Field(min_length=1, max_length=200)
 
 
 class DocumentDownload(BaseModel):

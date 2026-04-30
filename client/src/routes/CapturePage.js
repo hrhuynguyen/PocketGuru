@@ -1,5 +1,5 @@
 import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AuthNav } from '../components/AuthNav';
 import { AuthNudge } from '../components/AuthNudge';
@@ -11,7 +11,7 @@ import { Icon } from '../components/icons';
 import { PGButton, PGCard, PGNav, PGProgress, PGSkel } from '../components/primitives';
 import { ApiError } from '../lib/api';
 import { buildPdfFromImages } from '../lib/pdf';
-import { useDeleteDocument, useDocumentList, useMe, useProcess, useRenameDocument, } from '../lib/queries';
+import { useDocumentList, useMe, useProcess } from '../lib/queries';
 const TONE_MAP = {
     blue: { bg: 'var(--blue-soft)', ic: 'var(--blue)' },
     pink: { bg: 'var(--pink-soft)', ic: 'var(--pink)' },
@@ -210,56 +210,7 @@ function RecentDocs({ query, onOpen, }) {
 }
 function RecentDocCard({ doc, tone, onOpen, }) {
     const map = TONE_MAP[tone];
-    const rename = useRenameDocument();
-    const remove = useDeleteDocument();
-    const [menuOpen, setMenuOpen] = useState(false);
-    const [editing, setEditing] = useState(false);
-    const [draft, setDraft] = useState(doc.title);
-    const [confirmDelete, setConfirmDelete] = useState(false);
-    const inputRef = useRef(null);
-    const menuRef = useRef(null);
-    useEffect(() => {
-        if (editing) {
-            setDraft(doc.title);
-            requestAnimationFrame(() => {
-                inputRef.current?.focus();
-                inputRef.current?.select();
-            });
-        }
-    }, [editing, doc.title]);
-    useEffect(() => {
-        if (!menuOpen)
-            return;
-        const onDocClick = (e) => {
-            if (!menuRef.current?.contains(e.target))
-                setMenuOpen(false);
-        };
-        document.addEventListener('mousedown', onDocClick);
-        return () => document.removeEventListener('mousedown', onDocClick);
-    }, [menuOpen]);
-    const submitRename = async () => {
-        const trimmed = draft.trim();
-        if (!trimmed || trimmed === doc.title) {
-            setEditing(false);
-            return;
-        }
-        try {
-            await rename.mutateAsync({ id: doc.id, title: trimmed });
-            setEditing(false);
-        }
-        catch {
-            // keep editor open so user can retry
-        }
-    };
-    const handleCardClick = () => {
-        if (editing || menuOpen || confirmDelete)
-            return;
-        onOpen(doc.id);
-    };
-    const stop = (e) => {
-        e.stopPropagation();
-    };
-    return (_jsxs(PGCard, { thick: true, padding: 14, onClick: handleCardClick, style: { display: 'flex', alignItems: 'center', gap: 12, position: 'relative' }, children: [_jsx("div", { style: {
+    return (_jsxs(PGCard, { thick: true, padding: 14, onClick: () => onOpen(doc.id), style: { display: 'flex', alignItems: 'center', gap: 12 }, children: [_jsx("div", { style: {
                     width: 44,
                     height: 52,
                     borderRadius: 10,
@@ -270,30 +221,13 @@ function RecentDocCard({ doc, tone, onOpen, }) {
                     justifyContent: 'center',
                     color: map.ic,
                     flexShrink: 0,
-                }, children: _jsx(Icon.Doc, { s: 20 }) }), _jsxs("div", { style: { flex: 1, minWidth: 0 }, children: [editing ? (_jsx("input", { ref: inputRef, value: draft, onChange: (e) => setDraft(e.target.value), onClick: stop, onKeyDown: (e) => {
-                            stop(e);
-                            if (e.key === 'Enter')
-                                void submitRename();
-                            if (e.key === 'Escape')
-                                setEditing(false);
-                        }, onBlur: () => void submitRename(), disabled: rename.isPending, maxLength: 200, style: {
-                            width: '100%',
-                            padding: '4px 8px',
-                            fontSize: 14,
-                            fontWeight: 800,
-                            color: 'var(--ink)',
-                            background: 'var(--surface-2)',
-                            border: '2px solid var(--green)',
-                            borderRadius: 8,
-                            outline: 'none',
-                            fontFamily: 'inherit',
-                        } })) : (_jsx("div", { className: "t-body-sm", style: {
+                }, children: _jsx(Icon.Doc, { s: 20 }) }), _jsxs("div", { style: { flex: 1, minWidth: 0 }, children: [_jsx("div", { className: "t-body-sm", style: {
                             color: 'var(--ink)',
                             whiteSpace: 'nowrap',
                             overflow: 'hidden',
                             textOverflow: 'ellipsis',
                             fontWeight: 800,
-                        }, children: doc.title })), _jsxs("div", { style: { display: 'flex', alignItems: 'center', gap: 6, marginTop: 3 }, children: [_jsxs("span", { className: "t-mono", style: { color: 'var(--ink-3)' }, children: [doc.page_count, " page", doc.page_count === 1 ? '' : 's'] }), _jsx("span", { style: { width: 3, height: 3, borderRadius: '50%', background: 'var(--ink-4)' } }), _jsx("span", { className: "t-mono", style: { color: 'var(--ink-3)' }, children: relativeWhen(doc.created_at) })] })] }), doc.last_attempt_score != null && !editing && (_jsxs("div", { style: {
+                        }, children: doc.title }), _jsxs("div", { style: { display: 'flex', alignItems: 'center', gap: 6, marginTop: 3 }, children: [_jsxs("span", { className: "t-mono", style: { color: 'var(--ink-3)' }, children: [doc.page_count, " page", doc.page_count === 1 ? '' : 's'] }), _jsx("span", { style: { width: 3, height: 3, borderRadius: '50%', background: 'var(--ink-4)' } }), _jsx("span", { className: "t-mono", style: { color: 'var(--ink-3)' }, children: relativeWhen(doc.created_at) })] })] }), doc.last_attempt_score != null && (_jsxs("div", { style: {
                     display: 'flex',
                     alignItems: 'center',
                     gap: 4,
@@ -301,95 +235,7 @@ function RecentDocCard({ doc, tone, onOpen, }) {
                     borderRadius: 999,
                     background: 'var(--yellow-soft)',
                     border: '2px solid var(--yellow-dark)',
-                }, children: [_jsx(Icon.Star, { s: 13 }), _jsxs("span", { style: { fontFamily: 'var(--font-mono)', fontSize: 12, fontWeight: 800, color: '#7A5A00' }, children: [doc.last_attempt_score, "%"] })] })), _jsxs("div", { ref: menuRef, style: { position: 'relative', flexShrink: 0 }, onClick: stop, children: [_jsx("button", { "aria-label": "Document options", onClick: (e) => {
-                            stop(e);
-                            setMenuOpen((v) => !v);
-                        }, style: {
-                            width: 36,
-                            height: 36,
-                            borderRadius: 10,
-                            background: 'transparent',
-                            border: '2px solid var(--hairline)',
-                            color: 'var(--ink-3)',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            cursor: 'pointer',
-                        }, children: _jsx(Icon.More, { s: 18 }) }), menuOpen && (_jsxs("div", { style: {
-                            position: 'absolute',
-                            top: 'calc(100% + 6px)',
-                            right: 0,
-                            minWidth: 160,
-                            background: 'var(--surface)',
-                            border: '2px solid var(--hairline-strong)',
-                            borderRadius: 12,
-                            boxShadow: '0 6px 0 var(--hairline)',
-                            padding: 6,
-                            zIndex: 20,
-                        }, children: [_jsx(MenuItem, { icon: _jsx(Icon.Edit, { s: 16 }), label: "Rename", onClick: () => {
-                                    setMenuOpen(false);
-                                    setEditing(true);
-                                } }), _jsx(MenuItem, { icon: _jsx(Icon.Trash, { s: 16 }), label: "Delete", danger: true, onClick: () => {
-                                    setMenuOpen(false);
-                                    setConfirmDelete(true);
-                                } })] }))] }), confirmDelete && (_jsx(ConfirmDeleteOverlay, { title: doc.title, isPending: remove.isPending, onCancel: () => setConfirmDelete(false), onConfirm: async () => {
-                    try {
-                        await remove.mutateAsync(doc.id);
-                    }
-                    catch {
-                        setConfirmDelete(false);
-                    }
-                } }))] }));
-}
-function MenuItem({ icon, label, onClick, danger, }) {
-    return (_jsxs("button", { onClick: (e) => {
-            e.stopPropagation();
-            onClick();
-        }, style: {
-            display: 'flex',
-            alignItems: 'center',
-            gap: 10,
-            width: '100%',
-            padding: '8px 10px',
-            background: 'transparent',
-            border: 'none',
-            borderRadius: 8,
-            color: danger ? 'var(--red)' : 'var(--ink)',
-            fontSize: 13,
-            fontWeight: 700,
-            textAlign: 'left',
-            cursor: 'pointer',
-        }, onMouseEnter: (e) => {
-            e.currentTarget.style.background = danger
-                ? 'var(--red-soft)'
-                : 'var(--surface-2)';
-        }, onMouseLeave: (e) => {
-            e.currentTarget.style.background = 'transparent';
-        }, children: [icon, _jsx("span", { children: label })] }));
-}
-function ConfirmDeleteOverlay({ title, isPending, onCancel, onConfirm, }) {
-    return (_jsx("div", { onClick: (e) => {
-            e.stopPropagation();
-            if (!isPending)
-                onCancel();
-        }, style: {
-            position: 'fixed',
-            inset: 0,
-            background: 'rgba(0,0,0,0.45)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            padding: 20,
-            zIndex: 9999,
-        }, children: _jsxs("div", { onClick: (e) => e.stopPropagation(), style: {
-                width: '100%',
-                maxWidth: 360,
-                background: 'var(--surface)',
-                border: '2px solid var(--hairline-strong)',
-                borderRadius: 18,
-                padding: 18,
-                boxShadow: '0 8px 0 var(--hairline)',
-            }, children: [_jsx("div", { className: "t-h3", style: { marginBottom: 6 }, children: "Delete this study guide?" }), _jsxs("div", { className: "t-body-sm", style: { color: 'var(--ink-3)', marginBottom: 14 }, children: ["\u201C", title, "\u201D will be removed from your library. This can't be undone."] }), _jsxs("div", { style: { display: 'flex', gap: 10 }, children: [_jsx(PGButton, { variant: "secondary", size: "md", fullWidth: true, onClick: onCancel, disabled: isPending, children: "Cancel" }), _jsx(PGButton, { variant: "primary", size: "md", fullWidth: true, icon: _jsx(Icon.Trash, { s: 16 }), onClick: onConfirm, disabled: isPending, style: { background: 'var(--red)', borderColor: 'var(--red)' }, children: isPending ? 'Deleting…' : 'Delete' })] })] }) }));
+                }, children: [_jsx(Icon.Star, { s: 13 }), _jsxs("span", { style: { fontFamily: 'var(--font-mono)', fontSize: 12, fontWeight: 800, color: '#7A5A00' }, children: [doc.last_attempt_score, "%"] })] }))] }));
 }
 function ProcessingSteps() {
     const [step, setStep] = useState(0);

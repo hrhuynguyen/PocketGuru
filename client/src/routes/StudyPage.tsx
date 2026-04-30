@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 
 import { ConceptDrawer } from '../components/ConceptDrawer';
@@ -7,7 +7,7 @@ import { Flashcard } from '../components/Flashcard';
 import { Icon } from '../components/icons';
 import { PGBadge, PGButton, PGCard, PGIconBtn, PGNav, PGSkel } from '../components/primitives';
 import { adaptDocument } from '../lib/docAdapter';
-import { useDeleteDocument, useDocument, useRenameDocument } from '../lib/queries';
+import { useDocument } from '../lib/queries';
 import { SAMPLE_DOC, type Concept, type SampleDoc } from '../lib/sampleDoc';
 
 type Tab = 'summary' | 'map' | 'cards';
@@ -18,17 +18,9 @@ export default function StudyPage() {
   const navigate = useNavigate();
   const [tab, setTab] = useState<Tab>('summary');
   const [drawer, setDrawer] = useState<Concept | null>(null);
-  const [menuOpen, setMenuOpen] = useState(false);
-  const [editing, setEditing] = useState(false);
-  const [draft, setDraft] = useState('');
-  const [confirmDelete, setConfirmDelete] = useState(false);
-  const titleInputRef = useRef<HTMLInputElement>(null);
-  const menuRef = useRef<HTMLDivElement>(null);
 
   const isSample = !id || id === 'sample';
   const docQuery = useDocument(isSample ? undefined : id);
-  const rename = useRenameDocument();
-  const remove = useDeleteDocument();
   const doc: SampleDoc | null = isSample
     ? SAMPLE_DOC
     : docQuery.data
@@ -37,53 +29,6 @@ export default function StudyPage() {
 
   const goBack = () => navigate('/app');
   const startQuiz = () => navigate(`/quiz/${id ?? 'sample'}`);
-
-  useEffect(() => {
-    if (editing) {
-      setDraft(doc?.title ?? '');
-      requestAnimationFrame(() => {
-        titleInputRef.current?.focus();
-        titleInputRef.current?.select();
-      });
-    }
-  }, [editing, doc?.title]);
-
-  useEffect(() => {
-    if (!menuOpen) return;
-    const onDocClick = (e: MouseEvent) => {
-      if (!menuRef.current?.contains(e.target as Node)) setMenuOpen(false);
-    };
-    document.addEventListener('mousedown', onDocClick);
-    return () => document.removeEventListener('mousedown', onDocClick);
-  }, [menuOpen]);
-
-  const submitRename = async () => {
-    if (!id || isSample || !doc) {
-      setEditing(false);
-      return;
-    }
-    const trimmed = draft.trim();
-    if (!trimmed || trimmed === doc.title) {
-      setEditing(false);
-      return;
-    }
-    try {
-      await rename.mutateAsync({ id, title: trimmed });
-      setEditing(false);
-    } catch {
-      // keep editor open
-    }
-  };
-
-  const submitDelete = async () => {
-    if (!id || isSample) return;
-    try {
-      await remove.mutateAsync(id);
-      navigate('/app');
-    } catch {
-      setConfirmDelete(false);
-    }
-  };
 
   if (!doc) {
     return (
@@ -104,93 +49,17 @@ export default function StudyPage() {
     );
   }
 
-  const canEdit = !isSample;
-
   return (
     <div className="pg-shell">
       <PGNav
         left={<PGIconBtn icon={<Icon.ArrowLeft s={18} />} onClick={goBack} />}
         title="Study guide"
-        right={
-          canEdit ? (
-            <div ref={menuRef} style={{ position: 'relative' }}>
-              <PGIconBtn
-                icon={<Icon.More s={18} />}
-                onClick={() => setMenuOpen((v) => !v)}
-                label="Document options"
-              />
-              {menuOpen && (
-                <div
-                  style={{
-                    position: 'absolute',
-                    top: 'calc(100% + 6px)',
-                    right: 0,
-                    minWidth: 160,
-                    background: 'var(--surface)',
-                    border: '2px solid var(--hairline-strong)',
-                    borderRadius: 12,
-                    boxShadow: '0 6px 0 var(--hairline)',
-                    padding: 6,
-                    zIndex: 30,
-                  }}
-                >
-                  <StudyMenuItem
-                    icon={<Icon.Edit s={16} />}
-                    label="Rename"
-                    onClick={() => {
-                      setMenuOpen(false);
-                      setEditing(true);
-                    }}
-                  />
-                  <StudyMenuItem
-                    icon={<Icon.Trash s={16} />}
-                    label="Delete"
-                    danger
-                    onClick={() => {
-                      setMenuOpen(false);
-                      setConfirmDelete(true);
-                    }}
-                  />
-                </div>
-              )}
-            </div>
-          ) : undefined
-        }
       />
 
       <div style={{ padding: '16px 20px 10px', display: 'flex', flexDirection: 'column', gap: 14 }}>
         <div>
           <div className="t-eyebrow" style={{ marginBottom: 6 }}>{doc.source}</div>
-          {editing ? (
-            <input
-              ref={titleInputRef}
-              value={draft}
-              onChange={(e) => setDraft(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') void submitRename();
-                if (e.key === 'Escape') setEditing(false);
-              }}
-              onBlur={() => void submitRename()}
-              disabled={rename.isPending}
-              maxLength={200}
-              style={{
-                width: '100%',
-                margin: 0,
-                fontSize: 24,
-                lineHeight: 1.15,
-                fontWeight: 800,
-                color: 'var(--ink)',
-                background: 'var(--surface-2)',
-                border: '2px solid var(--green)',
-                borderRadius: 12,
-                padding: '6px 10px',
-                fontFamily: 'inherit',
-                outline: 'none',
-              }}
-            />
-          ) : (
-            <h1 className="t-h1" style={{ margin: 0, fontSize: 24, lineHeight: 1.15 }}>{doc.title}</h1>
-          )}
+          <h1 className="t-h1" style={{ margin: 0, fontSize: 24, lineHeight: 1.15 }}>{doc.title}</h1>
         </div>
         <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
           <PGBadge tone="green">{doc.concepts.length} concepts</PGBadge>
@@ -297,107 +166,7 @@ export default function StudyPage() {
       </div>
 
       <ConceptDrawer concept={drawer} concepts={doc.concepts} onClose={() => setDrawer(null)} onSelect={setDrawer} />
-
-      {confirmDelete && (
-        <div
-          onClick={() => !remove.isPending && setConfirmDelete(false)}
-          style={{
-            position: 'fixed',
-            inset: 0,
-            background: 'rgba(0,0,0,0.45)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            padding: 20,
-            zIndex: 9999,
-          }}
-        >
-          <div
-            onClick={(e) => e.stopPropagation()}
-            style={{
-              width: '100%',
-              maxWidth: 360,
-              background: 'var(--surface)',
-              border: '2px solid var(--hairline-strong)',
-              borderRadius: 18,
-              padding: 18,
-              boxShadow: '0 8px 0 var(--hairline)',
-            }}
-          >
-            <div className="t-h3" style={{ marginBottom: 6 }}>Delete this study guide?</div>
-            <div className="t-body-sm" style={{ color: 'var(--ink-3)', marginBottom: 14 }}>
-              “{doc.title}” will be removed from your library. This can&apos;t be undone.
-            </div>
-            <div style={{ display: 'flex', gap: 10 }}>
-              <PGButton
-                variant="secondary"
-                size="md"
-                fullWidth
-                onClick={() => setConfirmDelete(false)}
-                disabled={remove.isPending}
-              >
-                Cancel
-              </PGButton>
-              <PGButton
-                variant="primary"
-                size="md"
-                fullWidth
-                icon={<Icon.Trash s={16} />}
-                onClick={submitDelete}
-                disabled={remove.isPending}
-                style={{ background: 'var(--red)', borderColor: 'var(--red)' }}
-              >
-                {remove.isPending ? 'Deleting…' : 'Delete'}
-              </PGButton>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
-  );
-}
-
-function StudyMenuItem({
-  icon,
-  label,
-  onClick,
-  danger,
-}: {
-  icon: ReactNode;
-  label: string;
-  onClick: () => void;
-  danger?: boolean;
-}) {
-  return (
-    <button
-      onClick={onClick}
-      style={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: 10,
-        width: '100%',
-        padding: '8px 10px',
-        background: 'transparent',
-        border: 'none',
-        borderRadius: 8,
-        color: danger ? 'var(--red)' : 'var(--ink)',
-        fontSize: 13,
-        fontWeight: 700,
-        textAlign: 'left',
-        cursor: 'pointer',
-      }}
-      onMouseEnter={(e) => {
-        (e.currentTarget as HTMLButtonElement).style.background = danger
-          ? 'var(--red-soft)'
-          : 'var(--surface-2)';
-      }}
-      onMouseLeave={(e) => {
-        (e.currentTarget as HTMLButtonElement).style.background = 'transparent';
-      }}
-    >
-      {icon}
-      <span>{label}</span>
-    </button>
   );
 }
 

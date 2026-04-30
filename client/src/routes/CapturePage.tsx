@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { UseQueryResult } from '@tanstack/react-query';
 
@@ -12,15 +12,7 @@ import { Icon } from '../components/icons';
 import { PGButton, PGCard, PGNav, PGProgress, PGSkel } from '../components/primitives';
 import { ApiError } from '../lib/api';
 import { buildPdfFromImages } from '../lib/pdf';
-import {
-  useDeleteDocument,
-  useDocumentList,
-  useMe,
-  useProcess,
-  useRenameDocument,
-  type DocumentList,
-  type DocumentSummary,
-} from '../lib/queries';
+import { useDocumentList, useMe, useProcess, type DocumentList, type DocumentSummary } from '../lib/queries';
 
 type CaptureState = 'idle' | 'building-pdf' | 'uploading' | 'processing' | 'done' | 'error';
 type PreparedUpload = { file: File; title?: string };
@@ -399,63 +391,12 @@ function RecentDocCard({
   onOpen: (id: string) => void;
 }) {
   const map = TONE_MAP[tone];
-  const rename = useRenameDocument();
-  const remove = useDeleteDocument();
-  const [menuOpen, setMenuOpen] = useState(false);
-  const [editing, setEditing] = useState(false);
-  const [draft, setDraft] = useState(doc.title);
-  const [confirmDelete, setConfirmDelete] = useState(false);
-  const inputRef = useRef<HTMLInputElement>(null);
-  const menuRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (editing) {
-      setDraft(doc.title);
-      requestAnimationFrame(() => {
-        inputRef.current?.focus();
-        inputRef.current?.select();
-      });
-    }
-  }, [editing, doc.title]);
-
-  useEffect(() => {
-    if (!menuOpen) return;
-    const onDocClick = (e: MouseEvent) => {
-      if (!menuRef.current?.contains(e.target as Node)) setMenuOpen(false);
-    };
-    document.addEventListener('mousedown', onDocClick);
-    return () => document.removeEventListener('mousedown', onDocClick);
-  }, [menuOpen]);
-
-  const submitRename = async () => {
-    const trimmed = draft.trim();
-    if (!trimmed || trimmed === doc.title) {
-      setEditing(false);
-      return;
-    }
-    try {
-      await rename.mutateAsync({ id: doc.id, title: trimmed });
-      setEditing(false);
-    } catch {
-      // keep editor open so user can retry
-    }
-  };
-
-  const handleCardClick = () => {
-    if (editing || menuOpen || confirmDelete) return;
-    onOpen(doc.id);
-  };
-
-  const stop = (e: { stopPropagation: () => void }) => {
-    e.stopPropagation();
-  };
-
   return (
     <PGCard
       thick
       padding={14}
-      onClick={handleCardClick}
-      style={{ display: 'flex', alignItems: 'center', gap: 12, position: 'relative' }}
+      onClick={() => onOpen(doc.id)}
+      style={{ display: 'flex', alignItems: 'center', gap: 12 }}
     >
       <div
         style={{
@@ -474,47 +415,18 @@ function RecentDocCard({
         <Icon.Doc s={20} />
       </div>
       <div style={{ flex: 1, minWidth: 0 }}>
-        {editing ? (
-          <input
-            ref={inputRef}
-            value={draft}
-            onChange={(e) => setDraft(e.target.value)}
-            onClick={stop}
-            onKeyDown={(e) => {
-              stop(e);
-              if (e.key === 'Enter') void submitRename();
-              if (e.key === 'Escape') setEditing(false);
-            }}
-            onBlur={() => void submitRename()}
-            disabled={rename.isPending}
-            maxLength={200}
-            style={{
-              width: '100%',
-              padding: '4px 8px',
-              fontSize: 14,
-              fontWeight: 800,
-              color: 'var(--ink)',
-              background: 'var(--surface-2)',
-              border: '2px solid var(--green)',
-              borderRadius: 8,
-              outline: 'none',
-              fontFamily: 'inherit',
-            }}
-          />
-        ) : (
-          <div
-            className="t-body-sm"
-            style={{
-              color: 'var(--ink)',
-              whiteSpace: 'nowrap',
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-              fontWeight: 800,
-            }}
-          >
-            {doc.title}
-          </div>
-        )}
+        <div
+          className="t-body-sm"
+          style={{
+            color: 'var(--ink)',
+            whiteSpace: 'nowrap',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            fontWeight: 800,
+          }}
+        >
+          {doc.title}
+        </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 3 }}>
           <span className="t-mono" style={{ color: 'var(--ink-3)' }}>
             {doc.page_count} page{doc.page_count === 1 ? '' : 's'}
@@ -523,7 +435,7 @@ function RecentDocCard({
           <span className="t-mono" style={{ color: 'var(--ink-3)' }}>{relativeWhen(doc.created_at)}</span>
         </div>
       </div>
-      {doc.last_attempt_score != null && !editing && (
+      {doc.last_attempt_score != null && (
         <div
           style={{
             display: 'flex',
@@ -541,192 +453,7 @@ function RecentDocCard({
           </span>
         </div>
       )}
-
-      <div ref={menuRef} style={{ position: 'relative', flexShrink: 0 }} onClick={stop}>
-        <button
-          aria-label="Document options"
-          onClick={(e) => {
-            stop(e);
-            setMenuOpen((v) => !v);
-          }}
-          style={{
-            width: 36,
-            height: 36,
-            borderRadius: 10,
-            background: 'transparent',
-            border: '2px solid var(--hairline)',
-            color: 'var(--ink-3)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            cursor: 'pointer',
-          }}
-        >
-          <Icon.More s={18} />
-        </button>
-        {menuOpen && (
-          <div
-            style={{
-              position: 'absolute',
-              top: 'calc(100% + 6px)',
-              right: 0,
-              minWidth: 160,
-              background: 'var(--surface)',
-              border: '2px solid var(--hairline-strong)',
-              borderRadius: 12,
-              boxShadow: '0 6px 0 var(--hairline)',
-              padding: 6,
-              zIndex: 20,
-            }}
-          >
-            <MenuItem
-              icon={<Icon.Edit s={16} />}
-              label="Rename"
-              onClick={() => {
-                setMenuOpen(false);
-                setEditing(true);
-              }}
-            />
-            <MenuItem
-              icon={<Icon.Trash s={16} />}
-              label="Delete"
-              danger
-              onClick={() => {
-                setMenuOpen(false);
-                setConfirmDelete(true);
-              }}
-            />
-          </div>
-        )}
-      </div>
-
-      {confirmDelete && (
-        <ConfirmDeleteOverlay
-          title={doc.title}
-          isPending={remove.isPending}
-          onCancel={() => setConfirmDelete(false)}
-          onConfirm={async () => {
-            try {
-              await remove.mutateAsync(doc.id);
-            } catch {
-              setConfirmDelete(false);
-            }
-          }}
-        />
-      )}
     </PGCard>
-  );
-}
-
-function MenuItem({
-  icon,
-  label,
-  onClick,
-  danger,
-}: {
-  icon: ReactNode;
-  label: string;
-  onClick: () => void;
-  danger?: boolean;
-}) {
-  return (
-    <button
-      onClick={(e) => {
-        e.stopPropagation();
-        onClick();
-      }}
-      style={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: 10,
-        width: '100%',
-        padding: '8px 10px',
-        background: 'transparent',
-        border: 'none',
-        borderRadius: 8,
-        color: danger ? 'var(--red)' : 'var(--ink)',
-        fontSize: 13,
-        fontWeight: 700,
-        textAlign: 'left',
-        cursor: 'pointer',
-      }}
-      onMouseEnter={(e) => {
-        (e.currentTarget as HTMLButtonElement).style.background = danger
-          ? 'var(--red-soft)'
-          : 'var(--surface-2)';
-      }}
-      onMouseLeave={(e) => {
-        (e.currentTarget as HTMLButtonElement).style.background = 'transparent';
-      }}
-    >
-      {icon}
-      <span>{label}</span>
-    </button>
-  );
-}
-
-function ConfirmDeleteOverlay({
-  title,
-  isPending,
-  onCancel,
-  onConfirm,
-}: {
-  title: string;
-  isPending: boolean;
-  onCancel: () => void;
-  onConfirm: () => void;
-}) {
-  return (
-    <div
-      onClick={(e) => {
-        e.stopPropagation();
-        if (!isPending) onCancel();
-      }}
-      style={{
-        position: 'fixed',
-        inset: 0,
-        background: 'rgba(0,0,0,0.45)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: 20,
-        zIndex: 9999,
-      }}
-    >
-      <div
-        onClick={(e) => e.stopPropagation()}
-        style={{
-          width: '100%',
-          maxWidth: 360,
-          background: 'var(--surface)',
-          border: '2px solid var(--hairline-strong)',
-          borderRadius: 18,
-          padding: 18,
-          boxShadow: '0 8px 0 var(--hairline)',
-        }}
-      >
-        <div className="t-h3" style={{ marginBottom: 6 }}>Delete this study guide?</div>
-        <div className="t-body-sm" style={{ color: 'var(--ink-3)', marginBottom: 14 }}>
-          “{title}” will be removed from your library. This can&apos;t be undone.
-        </div>
-        <div style={{ display: 'flex', gap: 10 }}>
-          <PGButton variant="secondary" size="md" fullWidth onClick={onCancel} disabled={isPending}>
-            Cancel
-          </PGButton>
-          <PGButton
-            variant="primary"
-            size="md"
-            fullWidth
-            icon={<Icon.Trash s={16} />}
-            onClick={onConfirm}
-            disabled={isPending}
-            style={{ background: 'var(--red)', borderColor: 'var(--red)' }}
-          >
-            {isPending ? 'Deleting…' : 'Delete'}
-          </PGButton>
-        </div>
-      </div>
-    </div>
   );
 }
 

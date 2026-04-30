@@ -1,5 +1,5 @@
 import { jsx as _jsx, Fragment as _Fragment, jsxs as _jsxs } from "react/jsx-runtime";
-import { useEffect, useRef, useState } from 'react';
+import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ConceptDrawer } from '../components/ConceptDrawer';
 import { ConceptMap } from '../components/ConceptMap';
@@ -7,7 +7,7 @@ import { Flashcard } from '../components/Flashcard';
 import { Icon } from '../components/icons';
 import { PGBadge, PGButton, PGCard, PGIconBtn, PGNav, PGSkel } from '../components/primitives';
 import { adaptDocument } from '../lib/docAdapter';
-import { useDeleteDocument, useDocument, useRenameDocument } from '../lib/queries';
+import { useDocument } from '../lib/queries';
 import { SAMPLE_DOC } from '../lib/sampleDoc';
 const CONCEPT_CHIP_TONES = ['green', 'blue', 'yellow', 'pink', 'orange'];
 export default function StudyPage() {
@@ -15,16 +15,8 @@ export default function StudyPage() {
     const navigate = useNavigate();
     const [tab, setTab] = useState('summary');
     const [drawer, setDrawer] = useState(null);
-    const [menuOpen, setMenuOpen] = useState(false);
-    const [editing, setEditing] = useState(false);
-    const [draft, setDraft] = useState('');
-    const [confirmDelete, setConfirmDelete] = useState(false);
-    const titleInputRef = useRef(null);
-    const menuRef = useRef(null);
     const isSample = !id || id === 'sample';
     const docQuery = useDocument(isSample ? undefined : id);
-    const rename = useRenameDocument();
-    const remove = useDeleteDocument();
     const doc = isSample
         ? SAMPLE_DOC
         : docQuery.data
@@ -32,94 +24,10 @@ export default function StudyPage() {
             : null;
     const goBack = () => navigate('/app');
     const startQuiz = () => navigate(`/quiz/${id ?? 'sample'}`);
-    useEffect(() => {
-        if (editing) {
-            setDraft(doc?.title ?? '');
-            requestAnimationFrame(() => {
-                titleInputRef.current?.focus();
-                titleInputRef.current?.select();
-            });
-        }
-    }, [editing, doc?.title]);
-    useEffect(() => {
-        if (!menuOpen)
-            return;
-        const onDocClick = (e) => {
-            if (!menuRef.current?.contains(e.target))
-                setMenuOpen(false);
-        };
-        document.addEventListener('mousedown', onDocClick);
-        return () => document.removeEventListener('mousedown', onDocClick);
-    }, [menuOpen]);
-    const submitRename = async () => {
-        if (!id || isSample || !doc) {
-            setEditing(false);
-            return;
-        }
-        const trimmed = draft.trim();
-        if (!trimmed || trimmed === doc.title) {
-            setEditing(false);
-            return;
-        }
-        try {
-            await rename.mutateAsync({ id, title: trimmed });
-            setEditing(false);
-        }
-        catch {
-            // keep editor open
-        }
-    };
-    const submitDelete = async () => {
-        if (!id || isSample)
-            return;
-        try {
-            await remove.mutateAsync(id);
-            navigate('/app');
-        }
-        catch {
-            setConfirmDelete(false);
-        }
-    };
     if (!doc) {
         return (_jsxs("div", { className: "pg-shell", children: [_jsx(PGNav, { left: _jsx(PGIconBtn, { icon: _jsx(Icon.ArrowLeft, { s: 18 }), onClick: goBack }), title: "Study guide" }), _jsx("div", { style: { padding: '14px 20px', display: 'flex', flexDirection: 'column', gap: 12 }, children: docQuery.error ? (_jsx("div", { className: "t-body-sm", style: { color: 'var(--red)' }, children: "Couldn't load this document." })) : (_jsxs(_Fragment, { children: [_jsx(PGSkel, { w: "60%", h: 20 }), _jsx(PGSkel, { w: "100%", h: 120, r: 16 }), _jsx(PGSkel, { w: "100%", h: 80, r: 16 })] })) })] }));
     }
-    const canEdit = !isSample;
-    return (_jsxs("div", { className: "pg-shell", children: [_jsx(PGNav, { left: _jsx(PGIconBtn, { icon: _jsx(Icon.ArrowLeft, { s: 18 }), onClick: goBack }), title: "Study guide", right: canEdit ? (_jsxs("div", { ref: menuRef, style: { position: 'relative' }, children: [_jsx(PGIconBtn, { icon: _jsx(Icon.More, { s: 18 }), onClick: () => setMenuOpen((v) => !v), label: "Document options" }), menuOpen && (_jsxs("div", { style: {
-                                position: 'absolute',
-                                top: 'calc(100% + 6px)',
-                                right: 0,
-                                minWidth: 160,
-                                background: 'var(--surface)',
-                                border: '2px solid var(--hairline-strong)',
-                                borderRadius: 12,
-                                boxShadow: '0 6px 0 var(--hairline)',
-                                padding: 6,
-                                zIndex: 30,
-                            }, children: [_jsx(StudyMenuItem, { icon: _jsx(Icon.Edit, { s: 16 }), label: "Rename", onClick: () => {
-                                        setMenuOpen(false);
-                                        setEditing(true);
-                                    } }), _jsx(StudyMenuItem, { icon: _jsx(Icon.Trash, { s: 16 }), label: "Delete", danger: true, onClick: () => {
-                                        setMenuOpen(false);
-                                        setConfirmDelete(true);
-                                    } })] }))] })) : undefined }), _jsxs("div", { style: { padding: '16px 20px 10px', display: 'flex', flexDirection: 'column', gap: 14 }, children: [_jsxs("div", { children: [_jsx("div", { className: "t-eyebrow", style: { marginBottom: 6 }, children: doc.source }), editing ? (_jsx("input", { ref: titleInputRef, value: draft, onChange: (e) => setDraft(e.target.value), onKeyDown: (e) => {
-                                    if (e.key === 'Enter')
-                                        void submitRename();
-                                    if (e.key === 'Escape')
-                                        setEditing(false);
-                                }, onBlur: () => void submitRename(), disabled: rename.isPending, maxLength: 200, style: {
-                                    width: '100%',
-                                    margin: 0,
-                                    fontSize: 24,
-                                    lineHeight: 1.15,
-                                    fontWeight: 800,
-                                    color: 'var(--ink)',
-                                    background: 'var(--surface-2)',
-                                    border: '2px solid var(--green)',
-                                    borderRadius: 12,
-                                    padding: '6px 10px',
-                                    fontFamily: 'inherit',
-                                    outline: 'none',
-                                } })) : (_jsx("h1", { className: "t-h1", style: { margin: 0, fontSize: 24, lineHeight: 1.15 }, children: doc.title }))] }), _jsxs("div", { style: { display: 'flex', gap: 6, flexWrap: 'wrap' }, children: [_jsxs(PGBadge, { tone: "green", children: [doc.concepts.length, " concepts"] }), _jsxs(PGBadge, { tone: "blue", children: [doc.flashcards.length, " cards"] }), _jsxs(PGBadge, { tone: "yellow", children: [doc.quiz.length, " quiz questions"] })] }), _jsx(PGCard, { thick: true, style: {
+    return (_jsxs("div", { className: "pg-shell", children: [_jsx(PGNav, { left: _jsx(PGIconBtn, { icon: _jsx(Icon.ArrowLeft, { s: 18 }), onClick: goBack }), title: "Study guide" }), _jsxs("div", { style: { padding: '16px 20px 10px', display: 'flex', flexDirection: 'column', gap: 14 }, children: [_jsxs("div", { children: [_jsx("div", { className: "t-eyebrow", style: { marginBottom: 6 }, children: doc.source }), _jsx("h1", { className: "t-h1", style: { margin: 0, fontSize: 24, lineHeight: 1.15 }, children: doc.title })] }), _jsxs("div", { style: { display: 'flex', gap: 6, flexWrap: 'wrap' }, children: [_jsxs(PGBadge, { tone: "green", children: [doc.concepts.length, " concepts"] }), _jsxs(PGBadge, { tone: "blue", children: [doc.flashcards.length, " cards"] }), _jsxs(PGBadge, { tone: "yellow", children: [doc.quiz.length, " quiz questions"] })] }), _jsx(PGCard, { thick: true, style: {
                             padding: 18,
                             background: 'linear-gradient(180deg, #FFFDF8 0%, #F7FFF0 100%)',
                         }, children: _jsx("div", { className: "study-prose", children: doc.summary.map((paragraph, index) => (_jsx("p", { children: paragraph }, index))) }) })] }), _jsx("div", { style: { padding: '0 16px 12px' }, children: _jsx("div", { style: { display: 'flex', gap: 6, padding: 4, background: 'var(--surface-2)', borderRadius: 14, border: '2px solid var(--hairline)' }, children: ['summary', 'map', 'cards'].map((t) => (_jsx("button", { onClick: () => setTab(t), style: {
@@ -155,47 +63,7 @@ export default function StudyPage() {
                     padding: '12px 20px 24px',
                     background: 'linear-gradient(to top, var(--bg) 80%, transparent)',
                     pointerEvents: 'none',
-                }, children: _jsx("div", { style: { pointerEvents: 'auto' }, children: _jsxs(PGButton, { variant: "primary", size: "lg", fullWidth: true, icon: _jsx(Icon.Lightning, { s: 18 }), onClick: startQuiz, children: ["Start quiz \u00B7 ", doc.quiz.length, " questions"] }) }) }), _jsx(ConceptDrawer, { concept: drawer, concepts: doc.concepts, onClose: () => setDrawer(null), onSelect: setDrawer }), confirmDelete && (_jsx("div", { onClick: () => !remove.isPending && setConfirmDelete(false), style: {
-                    position: 'fixed',
-                    inset: 0,
-                    background: 'rgba(0,0,0,0.45)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    padding: 20,
-                    zIndex: 9999,
-                }, children: _jsxs("div", { onClick: (e) => e.stopPropagation(), style: {
-                        width: '100%',
-                        maxWidth: 360,
-                        background: 'var(--surface)',
-                        border: '2px solid var(--hairline-strong)',
-                        borderRadius: 18,
-                        padding: 18,
-                        boxShadow: '0 8px 0 var(--hairline)',
-                    }, children: [_jsx("div", { className: "t-h3", style: { marginBottom: 6 }, children: "Delete this study guide?" }), _jsxs("div", { className: "t-body-sm", style: { color: 'var(--ink-3)', marginBottom: 14 }, children: ["\u201C", doc.title, "\u201D will be removed from your library. This can't be undone."] }), _jsxs("div", { style: { display: 'flex', gap: 10 }, children: [_jsx(PGButton, { variant: "secondary", size: "md", fullWidth: true, onClick: () => setConfirmDelete(false), disabled: remove.isPending, children: "Cancel" }), _jsx(PGButton, { variant: "primary", size: "md", fullWidth: true, icon: _jsx(Icon.Trash, { s: 16 }), onClick: submitDelete, disabled: remove.isPending, style: { background: 'var(--red)', borderColor: 'var(--red)' }, children: remove.isPending ? 'Deleting…' : 'Delete' })] })] }) }))] }));
-}
-function StudyMenuItem({ icon, label, onClick, danger, }) {
-    return (_jsxs("button", { onClick: onClick, style: {
-            display: 'flex',
-            alignItems: 'center',
-            gap: 10,
-            width: '100%',
-            padding: '8px 10px',
-            background: 'transparent',
-            border: 'none',
-            borderRadius: 8,
-            color: danger ? 'var(--red)' : 'var(--ink)',
-            fontSize: 13,
-            fontWeight: 700,
-            textAlign: 'left',
-            cursor: 'pointer',
-        }, onMouseEnter: (e) => {
-            e.currentTarget.style.background = danger
-                ? 'var(--red-soft)'
-                : 'var(--surface-2)';
-        }, onMouseLeave: (e) => {
-            e.currentTarget.style.background = 'transparent';
-        }, children: [icon, _jsx("span", { children: label })] }));
+                }, children: _jsx("div", { style: { pointerEvents: 'auto' }, children: _jsxs(PGButton, { variant: "primary", size: "lg", fullWidth: true, icon: _jsx(Icon.Lightning, { s: 18 }), onClick: startQuiz, children: ["Start quiz \u00B7 ", doc.quiz.length, " questions"] }) }) }), _jsx(ConceptDrawer, { concept: drawer, concepts: doc.concepts, onClose: () => setDrawer(null), onSelect: setDrawer })] }));
 }
 function FlashcardsView({ doc }) {
     const cards = doc.flashcards;

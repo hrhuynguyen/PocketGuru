@@ -33,6 +33,10 @@ class DocumentDownload(BaseModel):
     expires_in: int
 
 
+class DocumentUpdate(BaseModel):
+    title: str
+
+
 class AttemptCreate(BaseModel):
     quiz_id: UUID
     answers: list[Literal[0, 1, 2, 3]]

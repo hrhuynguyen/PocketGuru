@@ -9,7 +9,13 @@ from sqlmodel import col
 from app.core.time import utcnow
 from app.deps import get_db, get_user_id
 from app.models import Attempt, Document, QuestionRow, QuizRow, StudyGuideRow
-from app.schemas.api import DocumentDownload, DocumentList, DocumentSummary, ProcessResponse
+from app.schemas.api import (
+    DocumentDownload,
+    DocumentList,
+    DocumentSummary,
+    DocumentUpdate,
+    ProcessResponse,
+)
 from app.schemas.quiz import Question, Quiz
 from app.schemas.study_guide import StudyGuide
 from app.services import storage
@@ -141,6 +147,54 @@ async def download_document(
     return DocumentDownload(
         url=await storage.signed_url(doc.storage_key, expires_in=expires_in),
         expires_in=expires_in,
+    )
+
+
+@router.patch("/{document_id}", response_model=DocumentSummary)
+async def update_document(
+    document_id: UUID,
+    payload: DocumentUpdate,
+    user_id: Annotated[str, Depends(get_user_id)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+) -> DocumentSummary:
+    user_uuid = UUID(user_id)
+
+    title = payload.title.strip()
+    if not title:
+        raise HTTPException(status_code=422, detail="Title cannot be empty")
+    if len(title) > 200:
+        raise HTTPException(status_code=422, detail="Title is too long")
+
+    doc = (
+        await db.execute(
+            select(Document)
+            .where(Document.id == document_id)
+            .where(Document.user_id == user_uuid)
+            .where(col(Document.deleted_at).is_(None))
+        )
+    ).scalar_one_or_none()
+    if doc is None:
+        raise HTTPException(status_code=404, detail="Document not found")
+
+    doc.title = title
+    db.add(doc)
+    await db.commit()
+    await db.refresh(doc)
+
+    score_stmt = (
+        select(Attempt.score)
+        .where(Attempt.document_id == doc.id)
+        .order_by(col(Attempt.created_at).desc())
+        .limit(1)
+    )
+    last_score = (await db.execute(score_stmt)).scalar_one_or_none()
+
+    return DocumentSummary(
+        id=doc.id,
+        title=doc.title,
+        page_count=doc.page_count,
+        created_at=doc.created_at,
+        last_attempt_score=last_score,
     )
 
 

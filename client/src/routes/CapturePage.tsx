@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { UseQueryResult } from '@tanstack/react-query';
 
@@ -12,7 +12,15 @@ import { Icon } from '../components/icons';
 import { PGButton, PGCard, PGNav, PGProgress, PGSkel } from '../components/primitives';
 import { ApiError } from '../lib/api';
 import { buildPdfFromImages } from '../lib/pdf';
-import { useDocumentList, useMe, useProcess, type DocumentList, type DocumentSummary } from '../lib/queries';
+import {
+  useDeleteDocument,
+  useDocumentList,
+  useMe,
+  useProcess,
+  useRenameDocument,
+  type DocumentList,
+  type DocumentSummary,
+} from '../lib/queries';
 
 type CaptureState = 'idle' | 'building-pdf' | 'uploading' | 'processing' | 'done' | 'error';
 type PreparedUpload = { file: File; title?: string };
@@ -347,6 +355,12 @@ function RecentDocs({
   query: UseQueryResult<DocumentList, Error>;
   onOpen: (id: string) => void;
 }) {
+  const renameMutation = useRenameDocument();
+  const deleteMutation = useDeleteDocument();
+  const [renameTarget, setRenameTarget] = useState<DocumentSummary | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<DocumentSummary | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
+
   if (query.isLoading) {
     return (
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -372,12 +386,81 @@ function RecentDocs({
       </PGCard>
     );
   }
+
+  const submitRename = async (title: string) => {
+    if (!renameTarget) return;
+    setActionError(null);
+    try {
+      await renameMutation.mutateAsync({ id: renameTarget.id, title });
+      setRenameTarget(null);
+    } catch (e) {
+      setActionError(e instanceof Error ? e.message : 'Could not rename');
+    }
+  };
+
+  const confirmDelete = async () => {
+    if (!deleteTarget) return;
+    setActionError(null);
+    try {
+      await deleteMutation.mutateAsync({ id: deleteTarget.id });
+      setDeleteTarget(null);
+    } catch (e) {
+      setActionError(e instanceof Error ? e.message : 'Could not delete');
+    }
+  };
+
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-      {items.slice(0, 5).map((d, i) => (
-        <RecentDocCard key={d.id} doc={d} tone={RECENT_TONES[i % RECENT_TONES.length]} onOpen={onOpen} />
-      ))}
-    </div>
+    <>
+      {actionError && (
+        <div
+          className="t-body-sm"
+          style={{
+            marginBottom: 10,
+            padding: '8px 12px',
+            background: 'var(--red-soft)',
+            border: '2px solid var(--red)',
+            borderRadius: 12,
+            color: 'var(--red)',
+          }}
+        >
+          {actionError}
+        </div>
+      )}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+        {items.slice(0, 5).map((d, i) => (
+          <RecentDocCard
+            key={d.id}
+            doc={d}
+            tone={RECENT_TONES[i % RECENT_TONES.length]}
+            onOpen={onOpen}
+            onRename={() => {
+              setActionError(null);
+              setRenameTarget(d);
+            }}
+            onDelete={() => {
+              setActionError(null);
+              setDeleteTarget(d);
+            }}
+          />
+        ))}
+      </div>
+      {renameTarget && (
+        <RenameDocDialog
+          doc={renameTarget}
+          busy={renameMutation.isPending}
+          onCancel={() => setRenameTarget(null)}
+          onSubmit={submitRename}
+        />
+      )}
+      {deleteTarget && (
+        <DeleteDocDialog
+          doc={deleteTarget}
+          busy={deleteMutation.isPending}
+          onCancel={() => setDeleteTarget(null)}
+          onConfirm={confirmDelete}
+        />
+      )}
+    </>
   );
 }
 
@@ -385,18 +468,34 @@ function RecentDocCard({
   doc,
   tone,
   onOpen,
+  onRename,
+  onDelete,
 }: {
   doc: DocumentSummary;
   tone: RecentTone;
   onOpen: (id: string) => void;
+  onRename: () => void;
+  onDelete: () => void;
 }) {
   const map = TONE_MAP[tone];
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!menuOpen) return;
+    const handle = (event: MouseEvent) => {
+      if (!menuRef.current?.contains(event.target as Node)) setMenuOpen(false);
+    };
+    document.addEventListener('mousedown', handle);
+    return () => document.removeEventListener('mousedown', handle);
+  }, [menuOpen]);
+
   return (
     <PGCard
       thick
       padding={14}
       onClick={() => onOpen(doc.id)}
-      style={{ display: 'flex', alignItems: 'center', gap: 12 }}
+      style={{ display: 'flex', alignItems: 'center', gap: 12, position: 'relative' }}
     >
       <div
         style={{
@@ -453,7 +552,241 @@ function RecentDocCard({
           </span>
         </div>
       )}
+      <div ref={menuRef} style={{ position: 'relative' }}>
+        <button
+          type="button"
+          aria-label="Document actions"
+          aria-haspopup="menu"
+          aria-expanded={menuOpen}
+          onClick={(e) => {
+            e.stopPropagation();
+            setMenuOpen((v) => !v);
+          }}
+          style={{
+            width: 32,
+            height: 32,
+            borderRadius: 10,
+            background: 'transparent',
+            border: 0,
+            color: 'var(--ink-3)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            cursor: 'pointer',
+            padding: 0,
+          }}
+        >
+          <Icon.MoreVertical s={18} />
+        </button>
+        {menuOpen && (
+          <div
+            role="menu"
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              position: 'absolute',
+              top: 38,
+              right: 0,
+              minWidth: 168,
+              background: 'var(--surface)',
+              border: '2px solid var(--hairline-strong)',
+              borderRadius: 12,
+              boxShadow: '0 8px 24px rgba(0,0,0,0.12)',
+              padding: 6,
+              zIndex: 10,
+            }}
+          >
+            <MenuItem
+              icon={<Icon.Pencil s={16} />}
+              label="Rename"
+              onClick={() => {
+                setMenuOpen(false);
+                onRename();
+              }}
+            />
+            <MenuItem
+              icon={<Icon.Trash s={16} />}
+              label="Delete"
+              danger
+              onClick={() => {
+                setMenuOpen(false);
+                onDelete();
+              }}
+            />
+          </div>
+        )}
+      </div>
     </PGCard>
+  );
+}
+
+function MenuItem({
+  icon,
+  label,
+  onClick,
+  danger,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  onClick: () => void;
+  danger?: boolean;
+}) {
+  return (
+    <button
+      type="button"
+      role="menuitem"
+      onClick={onClick}
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: 10,
+        width: '100%',
+        padding: '8px 10px',
+        borderRadius: 8,
+        background: 'transparent',
+        border: 0,
+        cursor: 'pointer',
+        color: danger ? 'var(--red)' : 'var(--ink)',
+        fontSize: 14,
+        fontWeight: 700,
+        textAlign: 'left',
+      }}
+      onMouseEnter={(e) => {
+        e.currentTarget.style.background = danger ? 'var(--red-soft)' : 'var(--surface-2)';
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.background = 'transparent';
+      }}
+    >
+      {icon}
+      {label}
+    </button>
+  );
+}
+
+function ModalShell({ children, onClose }: { children: React.ReactNode; onClose: () => void }) {
+  return (
+    <div
+      role="dialog"
+      aria-modal="true"
+      onClick={onClose}
+      style={{
+        position: 'fixed',
+        inset: 0,
+        background: 'rgba(20,20,20,0.45)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: 20,
+        zIndex: 9998,
+      }}
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        style={{
+          background: 'var(--surface)',
+          borderRadius: 20,
+          padding: 18,
+          width: '100%',
+          maxWidth: 360,
+          boxShadow: '0 12px 40px rgba(0,0,0,0.18)',
+        }}
+      >
+        {children}
+      </div>
+    </div>
+  );
+}
+
+function RenameDocDialog({
+  doc,
+  busy,
+  onCancel,
+  onSubmit,
+}: {
+  doc: DocumentSummary;
+  busy: boolean;
+  onCancel: () => void;
+  onSubmit: (title: string) => void;
+}) {
+  const [value, setValue] = useState(doc.title);
+  const trimmed = value.trim();
+  const canSave = trimmed.length > 0 && trimmed !== doc.title && !busy;
+  return (
+    <ModalShell onClose={busy ? () => {} : onCancel}>
+      <div className="t-h2" style={{ margin: 0, marginBottom: 10 }}>Rename study guide</div>
+      <input
+        autoFocus
+        value={value}
+        onChange={(e) => setValue(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' && canSave) onSubmit(trimmed);
+          if (e.key === 'Escape' && !busy) onCancel();
+        }}
+        maxLength={200}
+        style={{
+          width: '100%',
+          padding: '10px 12px',
+          borderRadius: 12,
+          border: '2px solid var(--hairline-strong)',
+          fontSize: 15,
+          fontWeight: 600,
+          background: 'var(--surface)',
+          color: 'var(--ink)',
+          outline: 'none',
+        }}
+      />
+      <div style={{ display: 'flex', gap: 10, marginTop: 14 }}>
+        <PGButton variant="secondary" size="md" fullWidth onClick={onCancel} disabled={busy}>
+          Cancel
+        </PGButton>
+        <PGButton
+          variant="primary"
+          size="md"
+          fullWidth
+          onClick={() => onSubmit(trimmed)}
+          disabled={!canSave}
+        >
+          {busy ? 'Saving…' : 'Save'}
+        </PGButton>
+      </div>
+    </ModalShell>
+  );
+}
+
+function DeleteDocDialog({
+  doc,
+  busy,
+  onCancel,
+  onConfirm,
+}: {
+  doc: DocumentSummary;
+  busy: boolean;
+  onCancel: () => void;
+  onConfirm: () => void;
+}) {
+  return (
+    <ModalShell onClose={busy ? () => {} : onCancel}>
+      <div className="t-h2" style={{ margin: 0, marginBottom: 8 }}>Delete this study guide?</div>
+      <div className="t-body-sm" style={{ color: 'var(--ink-2)', marginBottom: 14 }}>
+        “{doc.title}” will be removed from your library. This can&apos;t be undone.
+      </div>
+      <div style={{ display: 'flex', gap: 10 }}>
+        <PGButton variant="secondary" size="md" fullWidth onClick={onCancel} disabled={busy}>
+          Cancel
+        </PGButton>
+        <PGButton
+          variant="primary"
+          size="md"
+          fullWidth
+          icon={<Icon.Trash s={16} />}
+          onClick={onConfirm}
+          disabled={busy}
+          style={{ background: 'var(--red)', color: 'white' }}
+        >
+          {busy ? 'Deleting…' : 'Delete'}
+        </PGButton>
+      </div>
+    </ModalShell>
   );
 }
 

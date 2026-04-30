@@ -87,6 +87,37 @@ export function useProcess(): UseMutationResult<
   });
 }
 
+export function useRenameDocument(): UseMutationResult<
+  DocumentSummary,
+  Error,
+  { id: string; title: string }
+> {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, title }) =>
+      apiFetch<DocumentSummary>(`/documents/${id}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ title }),
+        headers: { 'Content-Type': 'application/json' },
+      }),
+    onSuccess: (updated) => {
+      qc.invalidateQueries({ queryKey: keys.documents });
+      qc.invalidateQueries({ queryKey: keys.document(updated.id) });
+    },
+  });
+}
+
+export function useDeleteDocument(): UseMutationResult<void, Error, { id: string }> {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id }) => apiFetch<void>(`/documents/${id}`, { method: 'DELETE' }),
+    onSuccess: (_data, { id }) => {
+      qc.invalidateQueries({ queryKey: keys.documents });
+      qc.removeQueries({ queryKey: keys.document(id) });
+    },
+  });
+}
+
 export function useSubmitAttempt(): UseMutationResult<
   AttemptResult,
   Error,

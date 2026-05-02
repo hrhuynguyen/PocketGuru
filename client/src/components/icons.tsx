@@ -135,4 +135,25 @@ export const Icon = {
       <path d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H9l-4 4z" />
     </svg>
   ),
+  MoreVertical: ({ s = 18 }: IconProps) => (
+    <svg width={s} height={s} viewBox="0 0 24 24" fill="currentColor">
+      <circle cx="12" cy="5.5" r="1.8" />
+      <circle cx="12" cy="12" r="1.8" />
+      <circle cx="12" cy="18.5" r="1.8" />
+    </svg>
+  ),
+  Pencil: ({ s = 18 }: IconProps) => (
+    <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M4 20h4l10-10-4-4L4 16z" />
+      <path d="m13.5 6.5 4 4" />
+    </svg>
+  ),
+  Trash: ({ s = 18 }: IconProps) => (
+    <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M4 7h16" />
+      <path d="M9 7V4h6v3" />
+      <path d="M6 7v13a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1V7" />
+      <path d="M10 11v6M14 11v6" />
+    </svg>
+  ),
 };

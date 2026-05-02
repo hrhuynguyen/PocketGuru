@@ -30,6 +30,7 @@ router = APIRouter()
 
 @router.get("/login/google")
 async def login_google(
+    request: Request,
     settings: Annotated[Settings, Depends(get_settings)],
     next: str = "/",
 ) -> RedirectResponse:
@@ -39,14 +40,17 @@ async def login_google(
     next_path = next if is_safe_next_path(next) else "/"
     state = secrets.token_urlsafe(32)
     response = RedirectResponse(oauth_login_url(state, settings), status_code=302)
+    is_https = request.url.scheme == "https"
     response.set_cookie(
         key=OAUTH_STATE_COOKIE_NAME,
         value=make_oauth_state_cookie(state, next_path, settings),
         httponly=True,
-        secure=settings.env == "production",
-        samesite="lax",
+        secure=is_https,
+        samesite="none" if is_https else "lax",
+        path="/",
         max_age=10 * 60,
     )
+    response.headers["Cache-Control"] = "no-store"
     return response
 
 
@@ -77,22 +81,32 @@ async def callback_google(
     next_path = saved_state.next_path if is_safe_next_path(saved_state.next_path) else "/"
     redirect_target = f"{settings.frontend_url.rstrip('/')}{next_path}"
     response = RedirectResponse(redirect_target, status_code=302)
+    is_https = request.url.scheme == "https"
     response.set_cookie(
         key=SESSION_COOKIE_NAME,
         value=make_session_cookie(str(user.id), settings),
         httponly=True,
-        secure=settings.env == "production",
+        secure=is_https,
         samesite="lax",
+        path="/",
         max_age=60 * 60 * 24 * 30,
     )
-    response.delete_cookie(key=OAUTH_STATE_COOKIE_NAME, samesite="lax")
+    response.delete_cookie(
+        key=OAUTH_STATE_COOKIE_NAME,
+        path="/",
+        samesite="none" if is_https else "lax",
+        secure=is_https,
+    )
     return response
 
 
 @router.post("/logout", status_code=204)
-async def logout() -> Response:
+async def logout(request: Request) -> Response:
     response = Response(status_code=204)
-    response.delete_cookie(key=SESSION_COOKIE_NAME, samesite="lax")
+    is_https = request.url.scheme == "https"
+    response.delete_cookie(
+        key=SESSION_COOKIE_NAME, path="/", samesite="lax", secure=is_https
+    )
     return response
 
 
@@ -103,6 +117,7 @@ async def me(
     settings: Annotated[Settings, Depends(get_settings)],
     db: Annotated[AsyncSession, Depends(get_db)],
 ) -> AuthMeResponse:
+    is_https = request.url.scheme == "https"
     session = read_session_cookie(request.cookies.get(SESSION_COOKIE_NAME), settings)
     if session is not None:
         user = (
@@ -114,8 +129,9 @@ async def me(
                     key=SESSION_COOKIE_NAME,
                     value=make_session_cookie(session.user_id, settings),
                     httponly=True,
-                    secure=settings.env == "production",
+                    secure=is_https,
                     samesite="lax",
+                    path="/",
                     max_age=60 * 60 * 24 * 30,
                 )
             return {
@@ -125,9 +141,13 @@ async def me(
                 "picture": user.picture,
                 "anonymous": False,
             }
-        response.delete_cookie(key=SESSION_COOKIE_NAME, samesite="lax")
+        response.delete_cookie(
+            key=SESSION_COOKIE_NAME, path="/", samesite="lax", secure=is_https
+        )
     elif request.cookies.get(SESSION_COOKIE_NAME):
-        response.delete_cookie(key=SESSION_COOKIE_NAME, samesite="lax")
+        response.delete_cookie(
+            key=SESSION_COOKIE_NAME, path="/", samesite="lax", secure=is_https
+        )
 
     user_id = ensure_anonymous_user_id(request, response, settings)
     return {"user_id": user_id, "anonymous": True}

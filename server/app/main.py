@@ -16,7 +16,7 @@ from app.core.errors import AppError, OcrTooShortError, StorageError
 from app.core.logging import configure_logging
 from app.deps import get_user_id
 from app.jobs import orphan_sweep
-from app.routers import attempts, auth, documents, process
+from app.routers import attempts, auth, chat, documents, process
 from app.services.gemini import GeminiRateLimit
 
 logger = logging.getLogger(__name__)
@@ -77,6 +77,7 @@ def create_app() -> FastAPI:
     app.include_router(auth.router, prefix="/api/auth", tags=["auth"])
     app.include_router(documents.router, prefix="/api/documents", tags=["documents"])
     app.include_router(attempts.router, prefix="/api/attempts", tags=["attempts"])
+    app.include_router(chat.router, prefix="/api", tags=["chat"])
 
     @app.exception_handler(GeminiRateLimit)
     async def gemini_rate_limit_handler(

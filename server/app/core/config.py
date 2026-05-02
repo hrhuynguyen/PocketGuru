@@ -13,11 +13,6 @@ class Settings(BaseSettings):
     storage_access_key: str
     storage_secret_key: str
     cookie_secret: str
-    google_oauth_client_id: str = ""
-    google_oauth_client_secret: str = ""
-    oauth_redirect_url: str = "http://localhost:8000/api/auth/callback/google"
-    session_secret: str = ""
-    frontend_url: str = "http://localhost:5173"
     cors_origins: str = "http://localhost:5173"
     env: str = "development"
 

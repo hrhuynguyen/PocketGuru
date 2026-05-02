@@ -50,11 +50,11 @@ export default function LandingPage() {
                 flashcards, and a quiz from the material you already have.
               </p>
               <div className="landing-hero-actions">
-                <PGButton variant="primary" size="lg" onClick={() => navigate('/login')}>
-                  Sign in with Google
+                <PGButton variant="primary" size="lg" icon={<Icon.Sparkle s={20} />} onClick={() => navigate('/chat')}>
+                  Chat with Sage
                 </PGButton>
                 <PGButton variant="secondary" size="lg" icon={<Icon.Camera s={20} />} onClick={() => navigate('/app')}>
-                  Continue as guest
+                  Snap notes
                 </PGButton>
               </div>
               <button
@@ -99,7 +99,7 @@ export default function LandingPage() {
           <div>
             <h2>Meet Sage, your study buddy.</h2>
             <p>Sage helps the app feel friendly while keeping the workflow fast: snap, review, quiz, repeat.</p>
-            <PGButton variant="primary" size="lg" onClick={() => navigate('/login')}>Say hi to Sage</PGButton>
+            <PGButton variant="primary" size="lg" icon={<Icon.Sparkle s={20} />} onClick={() => navigate('/chat')}>Say hi to Sage</PGButton>
           </div>
           <div className="landing-sage-row">
             <Sage pose="think" size={120} animated={false} />

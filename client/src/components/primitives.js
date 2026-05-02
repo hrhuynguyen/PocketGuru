@@ -146,7 +146,7 @@ export function PGNav({ left, title, right }) {
             minHeight: 52,
             background: 'var(--surface)',
             borderBottom: '2px solid var(--hairline)',
-        }, children: [_jsx("div", { style: { minWidth: 40, display: 'flex' }, children: left }), _jsx("div", { className: "t-h3", style: { flex: 1, textAlign: 'center' }, children: title }), _jsx("div", { style: { minWidth: 40, display: 'flex', justifyContent: 'flex-end', gap: 6 }, children: right })] }));
+        }, children: [_jsx("div", { style: { width: 40, display: 'flex' }, children: left }), _jsx("div", { className: "t-h3", style: { flex: 1, textAlign: 'center' }, children: title }), _jsx("div", { style: { width: 40, display: 'flex', justifyContent: 'flex-end', gap: 6 }, children: right })] }));
 }
 export function PGIconBtn({ icon, onClick, label }) {
     return (_jsx("button", { onClick: onClick, "aria-label": label, style: {

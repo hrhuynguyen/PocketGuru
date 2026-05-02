@@ -29,18 +29,7 @@ export function PDFPreview({
         <div className="t-h3">Your pages</div>
         <PGBadge tone="green">{items.length}/10</PGBadge>
       </div>
-      <div
-        className="no-scrollbar"
-        style={{
-          display: 'flex',
-          gap: 12,
-          overflowX: 'auto',
-          paddingTop: 10,
-          paddingBottom: 8,
-          paddingLeft: 10,
-          paddingRight: 12,
-        }}
-      >
+      <div className="no-scrollbar" style={{ display: 'flex', gap: 12, overflowX: 'auto', paddingBottom: 8, paddingRight: 4 }}>
         {items.map((item, index) => (
           <PreviewTile
             key={item.id}

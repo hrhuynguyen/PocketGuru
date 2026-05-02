@@ -18,6 +18,7 @@ export default function StudyPage() {
   const navigate = useNavigate();
   const [tab, setTab] = useState<Tab>('summary');
   const [drawer, setDrawer] = useState<Concept | null>(null);
+  const [fullscreen, setFullscreen] = useState(false);
 
   const isSample = !id || id === 'sample';
   const docQuery = useDocument(isSample ? undefined : id);
@@ -143,9 +144,50 @@ export default function StudyPage() {
             </div>
           </div>
         )}
-        {tab === 'map' && <ConceptMap concepts={doc.concepts} activeConceptId={drawer?.id ?? null} onSelect={setDrawer} />}
-        {tab === 'cards' && <FlashcardsView doc={doc} />}
+        {tab === 'map' && !fullscreen && <ConceptMap doc={doc} activeConceptId={drawer?.id ?? null} onSelect={setDrawer} />}
+        {tab === 'cards' && !fullscreen && <FlashcardsView doc={doc} />}
       </div>
+
+      {(tab === 'map' || tab === 'cards') && !fullscreen && (
+        <button
+          type="button"
+          aria-label="Expand to full screen"
+          onClick={() => setFullscreen(true)}
+          style={{
+            position: 'absolute',
+            right: 24,
+            bottom: 96,
+            zIndex: 12,
+            width: 44,
+            height: 44,
+            borderRadius: '50%',
+            background: 'var(--surface)',
+            color: 'var(--ink)',
+            border: '2px solid var(--hairline-strong)',
+            boxShadow: '0 4px 0 var(--hairline-strong)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            cursor: 'pointer',
+          }}
+        >
+          <Icon.Expand s={18} />
+        </button>
+      )}
+
+      {fullscreen && (tab === 'map' || tab === 'cards') && (
+        <FullscreenSection
+          title={tab === 'map' ? 'Mind map' : 'Flashcards'}
+          subtitle={doc.title}
+          onClose={() => setFullscreen(false)}
+        >
+          {tab === 'map' ? (
+            <ConceptMap doc={doc} activeConceptId={drawer?.id ?? null} onSelect={setDrawer} />
+          ) : (
+            <FlashcardsView doc={doc} />
+          )}
+        </FullscreenSection>
+      )}
 
       <div
         style={{
@@ -295,6 +337,84 @@ function FlashcardsView({ doc }: { doc: SampleDoc }) {
         >
           <Icon.ArrowRight s={20} />
         </button>
+      </div>
+    </div>
+  );
+}
+
+function FullscreenSection({
+  title,
+  subtitle,
+  onClose,
+  children,
+}: {
+  title: string;
+  subtitle?: string;
+  onClose: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <div
+      style={{
+        position: 'fixed',
+        inset: 0,
+        zIndex: 80,
+        background: 'var(--bg)',
+        display: 'flex',
+        flexDirection: 'column',
+      }}
+    >
+      <div
+        style={{
+          padding: '12px 16px',
+          minHeight: 56,
+          display: 'flex',
+          alignItems: 'center',
+          gap: 10,
+          background: 'var(--surface)',
+          borderBottom: '2px solid var(--hairline)',
+        }}
+      >
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div className="t-eyebrow" style={{ marginBottom: 2 }}>{title}</div>
+          {subtitle && (
+            <div
+              className="t-body-sm"
+              style={{
+                color: 'var(--ink-2)',
+                fontWeight: 800,
+                whiteSpace: 'nowrap',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+              }}
+            >
+              {subtitle}
+            </div>
+          )}
+        </div>
+        <button
+          type="button"
+          aria-label="Exit full screen"
+          onClick={onClose}
+          style={{
+            width: 40,
+            height: 40,
+            borderRadius: 12,
+            background: 'var(--surface-2)',
+            color: 'var(--ink)',
+            border: '2px solid var(--hairline-strong)',
+            boxShadow: '0 3px 0 var(--hairline-strong)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            cursor: 'pointer',
+          }}
+        >
+          <Icon.Collapse s={18} />
+        </button>
+      </div>
+      <div className="no-scrollbar" style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column' }}>
+        {children}
       </div>
     </div>
   );

@@ -270,9 +270,9 @@ export function PGNav({ left, title, right }: { left?: ReactNode; title?: ReactN
         borderBottom: '2px solid var(--hairline)',
       }}
     >
-      <div style={{ minWidth: 40, display: 'flex' }}>{left}</div>
+      <div style={{ width: 40, display: 'flex' }}>{left}</div>
       <div className="t-h3" style={{ flex: 1, textAlign: 'center' }}>{title}</div>
-      <div style={{ minWidth: 40, display: 'flex', justifyContent: 'flex-end', gap: 6 }}>{right}</div>
+      <div style={{ width: 40, display: 'flex', justifyContent: 'flex-end', gap: 6 }}>{right}</div>
     </div>
   );
 }

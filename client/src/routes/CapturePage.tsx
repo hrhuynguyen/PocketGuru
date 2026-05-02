@@ -179,6 +179,17 @@ export default function CapturePage() {
               </h1>
             </div>
           </div>
+          <div style={{ marginTop: 14 }}>
+            <PGButton
+              variant="primary"
+              size="md"
+              icon={<Icon.Sparkle s={16} />}
+              fullWidth
+              onClick={() => navigate('/chat')}
+            >
+              Chat with Sage
+            </PGButton>
+          </div>
         </div>
 
         <div style={{ padding: '20px 16px 24px' }}>

@@ -5,15 +5,7 @@ import { PGBadge } from './primitives';
 export function PDFPreview({ items, disabled, onAdd, onRemove, onReorder, }) {
     if (items.length === 0)
         return null;
-    return (_jsxs("div", { style: { marginTop: 22 }, children: [_jsxs("div", { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }, children: [_jsx("div", { className: "t-h3", children: "Your pages" }), _jsxs(PGBadge, { tone: "green", children: [items.length, "/10"] })] }), _jsxs("div", { className: "no-scrollbar", style: {
-                    display: 'flex',
-                    gap: 12,
-                    overflowX: 'auto',
-                    paddingTop: 10,
-                    paddingBottom: 8,
-                    paddingLeft: 10,
-                    paddingRight: 12,
-                }, children: [items.map((item, index) => (_jsx(PreviewTile, { item: item, index: index, disabled: disabled, onRemove: () => onRemove(item.id), onReorder: onReorder }, item.id))), _jsx("button", { onClick: onAdd, disabled: disabled || items.length >= 10, "aria-label": "Add page", style: {
+    return (_jsxs("div", { style: { marginTop: 22 }, children: [_jsxs("div", { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }, children: [_jsx("div", { className: "t-h3", children: "Your pages" }), _jsxs(PGBadge, { tone: "green", children: [items.length, "/10"] })] }), _jsxs("div", { className: "no-scrollbar", style: { display: 'flex', gap: 12, overflowX: 'auto', paddingBottom: 8, paddingRight: 4 }, children: [items.map((item, index) => (_jsx(PreviewTile, { item: item, index: index, disabled: disabled, onRemove: () => onRemove(item.id), onReorder: onReorder }, item.id))), _jsx("button", { onClick: onAdd, disabled: disabled || items.length >= 10, "aria-label": "Add page", style: {
                             width: 60,
                             height: 78,
                             borderRadius: 14,

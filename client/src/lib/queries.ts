@@ -118,6 +118,24 @@ export function useDeleteDocument(): UseMutationResult<void, Error, { id: string
   });
 }
 
+export type ChatRole = 'user' | 'assistant';
+export type ChatMessage = { role: ChatRole; content: string };
+
+export function useSageChat(): UseMutationResult<
+  { reply: string },
+  Error,
+  { messages: ChatMessage[] }
+> {
+  return useMutation({
+    mutationFn: ({ messages }) =>
+      apiFetch<{ reply: string }>('/chat', {
+        method: 'POST',
+        body: JSON.stringify({ messages }),
+        headers: { 'Content-Type': 'application/json' },
+      }),
+  });
+}
+
 export function useSubmitAttempt(): UseMutationResult<
   AttemptResult,
   Error,

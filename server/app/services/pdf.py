@@ -2,24 +2,18 @@ from pathlib import Path
 
 from pypdf import PdfReader
 
-from app.core.errors import OcrTooShortError
 from app.services import gemini
-
-MIN_TEXT_CHARS = 200
 
 
 async def extract_text(pdf_path: Path) -> str:
-    """Extract text via pypdf; fall back to PyMuPDF render-then-OCR if too short."""
+    """Extract text via pypdf; fall back to PyMuPDF render-then-OCR if empty."""
     text = _extract_with_pypdf(pdf_path)
-    if len(text.strip()) >= MIN_TEXT_CHARS:
+    if len(text.strip()) >= 200:
         return text
 
     pages = await render_pages(pdf_path)
-    ocr_text = (await gemini.vision_ocr(pages)).strip()
-    final = ocr_text or text.strip()
-    if len(final) < MIN_TEXT_CHARS:
-        raise OcrTooShortError()
-    return final
+    ocr_text = await gemini.vision_ocr(pages)
+    return ocr_text.strip() or text
 
 
 async def render_pages(pdf_path: Path) -> list[bytes]:

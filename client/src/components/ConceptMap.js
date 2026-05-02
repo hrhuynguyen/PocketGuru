@@ -1,63 +1,24 @@
 import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
 import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import { PGCard, PGSkel } from './primitives';
-const FALLBACK_TOKENS = {
-    ink: '#3C3C3C',
-    tones: [
-        { color: '#D7FFB8', stroke: '#46A302' },
-        { color: '#D0EFFF', stroke: '#1899D6' },
-        { color: '#FFF1B8', stroke: '#E6B400' },
-        { color: '#FFD4E2', stroke: '#A8235A' },
-        { color: '#FFE0B0', stroke: '#9A5A00' },
-    ],
-};
-const TONE_VAR_NAMES = [
-    ['--green-soft', '--green-dark'],
-    ['--blue-soft', '--blue-dark'],
-    ['--yellow-soft', '--yellow-dark'],
-    ['--pink-soft', '#A8235A'],
-    ['--orange-soft', '#9A5A00'],
-];
-function readVar(styles, value, fallback) {
-    if (value.startsWith('#') || value.startsWith('rgb'))
-        return value;
-    const v = styles.getPropertyValue(value).trim();
-    return v || fallback;
-}
-function useResolvedTokens() {
-    const [tokens, setTokens] = useState(FALLBACK_TOKENS);
-    useEffect(() => {
-        const resolve = () => {
-            if (typeof window === 'undefined')
-                return;
-            const styles = window.getComputedStyle(document.documentElement);
-            setTokens({
-                ink: readVar(styles, '--ink', FALLBACK_TOKENS.ink),
-                tones: TONE_VAR_NAMES.map(([colorVar, strokeVar], i) => ({
-                    color: readVar(styles, colorVar, FALLBACK_TOKENS.tones[i].color),
-                    stroke: readVar(styles, strokeVar, FALLBACK_TOKENS.tones[i].stroke),
-                })),
-            });
-        };
-        resolve();
-        const mq = window.matchMedia('(prefers-color-scheme: dark)');
-        mq.addEventListener('change', resolve);
-        return () => mq.removeEventListener('change', resolve);
-    }, []);
-    return tokens;
-}
 const ForceGraph2D = lazy(async () => {
     const mod = await import('react-force-graph-2d');
     return {
         default: mod.default,
     };
 });
+const NODE_TONES = [
+    { color: 'var(--green-soft)', stroke: 'var(--green-dark)' },
+    { color: 'var(--blue-soft)', stroke: 'var(--blue-dark)' },
+    { color: 'var(--yellow-soft)', stroke: 'var(--yellow-dark)' },
+    { color: 'var(--pink-soft)', stroke: '#A8235A' },
+    { color: 'var(--orange-soft)', stroke: '#9A5A00' },
+];
 export function ConceptMap({ concepts, activeConceptId, onSelect, }) {
     const containerRef = useRef(null);
     const graphRef = useRef(null);
     const [size, setSize] = useState({ width: 0, height: 0 });
     const [hoveredId, setHoveredId] = useState(null);
-    const tokens = useResolvedTokens();
     useEffect(() => {
         if (!containerRef.current)
             return;
@@ -76,15 +37,14 @@ export function ConceptMap({ concepts, activeConceptId, onSelect, }) {
     const graphData = useMemo(() => {
         const conceptIds = new Set(concepts.map((concept) => concept.id));
         const nodes = concepts.map((concept, index) => {
-            const tone = tokens.tones[index % tokens.tones.length];
+            const tone = NODE_TONES[index % NODE_TONES.length];
             return {
                 id: concept.id,
                 label: concept.term,
                 concept,
                 color: tone.color,
                 stroke: tone.stroke,
-                activeStroke: index === 0 ? tokens.tones[0].stroke : tone.stroke,
-                textColor: tokens.ink,
+                activeStroke: index === 0 ? 'var(--green-dark)' : tone.stroke,
                 isHub: index === 0,
                 size: index === 0 ? 1.2 : 1,
             };
@@ -103,7 +63,7 @@ export function ConceptMap({ concepts, activeConceptId, onSelect, }) {
             });
         });
         return { nodes, links };
-    }, [concepts, tokens]);
+    }, [concepts]);
     useEffect(() => {
         const graph = graphRef.current;
         if (!graph || graphData.nodes.length === 0)
@@ -144,7 +104,7 @@ function drawNodePill(ctx, node, globalScale, active, paintColor) {
     const paddingY = 8 / globalScale;
     const radius = 16 / globalScale;
     ctx.save();
-    ctx.font = `800 ${fontSize}px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif`;
+    ctx.font = `800 ${fontSize}px var(--font-sans)`;
     const textWidth = ctx.measureText(label).width;
     const width = textWidth + paddingX * 2;
     const height = fontSize + paddingY * 2;
@@ -152,12 +112,12 @@ function drawNodePill(ctx, node, globalScale, active, paintColor) {
     const y = (node.y ?? 0) - height / 2;
     ctx.beginPath();
     roundRect(ctx, x, y, width, height, radius);
-    ctx.fillStyle = paintColor ?? (node.color ?? '#FFFFFF');
+    ctx.fillStyle = paintColor ?? (node.color ?? 'white');
     ctx.fill();
     ctx.lineWidth = (active ? 4 : 2.5) / globalScale;
-    ctx.strokeStyle = paintColor ?? (active ? node.activeStroke ?? node.stroke ?? '#333333' : node.stroke ?? '#333333');
+    ctx.strokeStyle = paintColor ?? (active ? node.activeStroke ?? node.stroke ?? '#333' : node.stroke ?? '#333');
     ctx.stroke();
-    ctx.fillStyle = paintColor ? paintColor : (node.textColor ?? '#3C3C3C');
+    ctx.fillStyle = paintColor ? paintColor : 'var(--ink)';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillText(label, node.x ?? 0, node.y ?? 0);

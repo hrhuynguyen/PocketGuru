@@ -108,12 +108,12 @@ async def exchange_code(code: str, settings: Settings) -> GoogleProfile:
 
 
 def _session_serializer(settings: Settings) -> URLSafeTimedSerializer:
-    secret = settings.session_secret or settings.cookie_secret
+    secret = settings.cookie_secret
     return URLSafeTimedSerializer(secret, salt="session")
 
 
 def _state_serializer(settings: Settings) -> URLSafeTimedSerializer:
-    secret = settings.session_secret or settings.cookie_secret
+    secret = settings.cookie_secret
     return URLSafeTimedSerializer(secret, salt="oauth-state")
 
 

@@ -15,6 +15,10 @@ class Settings(BaseSettings):
     cookie_secret: str
     cors_origins: str = "http://localhost:5173"
     env: str = "development"
+    frontend_url: str = "http://localhost:5173"
+    google_oauth_client_id: str = ""
+    google_oauth_client_secret: str = ""
+    oauth_redirect_url: str = "http://localhost:8000/auth/callback/google"
 
     @property
     def cors_origins_list(self) -> list[str]:

@@ -4,27 +4,52 @@ from google.genai import errors, types
 from app.core.config import get_settings
 from app.services.gemini import GeminiRateLimit, _retry_after
 
-SYSTEM_PROMPT = """\
-You are Sage, a friendly professor-tutor for PocketGuru. You help students learn
-across any subject they bring you (biology, history, math, languages, CS, etc.).
+BASE_PROMPT = """\
+You are Sage, an expert tutor embedded in a study guide. Answer as a domain
+professional in whatever field the guide covers (biology, history, CS, etc.).
 
-How you respond:
-- Concise: 2–4 short sentences by default. Use a tiny list (max 3 bullets) only when
-  it genuinely helps.
-- Plain language at a college-freshman reading level — no jargon walls.
-- Direct: answer the question first, then give one quick example or analogy if useful.
-- Encouraging but never sycophantic. No filler ("Great question!").
-- If the student asks for a deeper dive, then expand. Default = brief.
-- If something is ambiguous, ask one short clarifying question instead of guessing.
-- Never invent citations or page numbers. If you don't know, say so.
+Hard rules for every reply:
+- Be concise. 1–3 short sentences. No preamble, no recap of the question.
+- Lead with the answer. Add at most one short clarifier or example.
+- Plain language. No filler ("Great question!", "Sure!", "I hope this helps").
+- No bullet lists, no headings, no markdown sections — prose only.
+- If the question is ambiguous, ask one brief clarifying question instead of guessing.
+- Never invent citations or page numbers. If you don't know, say so plainly.
 """
 
 
-async def chat(messages: list[dict[str, str]]) -> str:
+def _build_system_prompt(context: dict | None) -> str:
+    if not context:
+        return BASE_PROMPT
+    title = (context.get("title") or "").strip()
+    source = (context.get("source") or "").strip()
+    summary = (context.get("summary") or "").strip()
+    concepts = (context.get("concepts") or "").strip()
+    parts = [BASE_PROMPT, "\nStudy guide context (use it to ground your answers):"]
+    if title:
+        parts.append(f"- Title: {title}")
+    if source:
+        parts.append(f"- Source: {source}")
+    if summary:
+        parts.append(f"- Summary: {summary}")
+    if concepts:
+        parts.append(f"- Key concepts: {concepts}")
+    parts.append(
+        "\nSpeak as a working expert in the field this guide belongs to. Stay on topic; "
+        "if asked about something far outside the guide, answer briefly and steer back."
+    )
+    return "\n".join(parts)
+
+
+async def chat(
+    messages: list[dict[str, str]],
+    context: dict | None = None,
+) -> str:
     """Call Gemini with the Sage persona and return a reply string.
 
     `messages` is a list of {role: 'user'|'assistant', content: str} dicts in
     chronological order, ending with the latest user message.
+    `context` optionally carries study-guide grounding (title/source/summary/concepts).
     """
     contents: list[types.Content] = []
     for msg in messages:
@@ -38,6 +63,7 @@ async def chat(messages: list[dict[str, str]]) -> str:
     if not contents:
         return ""
 
+    system_prompt = _build_system_prompt(context)
     client = genai.Client(api_key=get_settings().gemini_api_key)
     try:
         async with client.aio as aio:
@@ -45,9 +71,9 @@ async def chat(messages: list[dict[str, str]]) -> str:
                 model="gemini-2.5-flash",
                 contents=contents,
                 config=types.GenerateContentConfig(
-                    system_instruction=SYSTEM_PROMPT,
-                    temperature=0.6,
-                    max_output_tokens=512,
+                    system_instruction=system_prompt,
+                    temperature=0.4,
+                    max_output_tokens=256,
                 ),
             )
     except errors.APIError as exc:

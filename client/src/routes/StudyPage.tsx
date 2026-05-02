@@ -6,8 +6,10 @@ import { ConceptMap } from '../components/ConceptMap';
 import { Flashcard } from '../components/Flashcard';
 import { Icon } from '../components/icons';
 import { PGBadge, PGButton, PGCard, PGIconBtn, PGNav, PGSkel } from '../components/primitives';
+import { Sage } from '../components/Sage';
+import { SageChat } from '../components/SageChat';
 import { adaptDocument } from '../lib/docAdapter';
-import { useDocument } from '../lib/queries';
+import { useDocument, type ChatContext } from '../lib/queries';
 import { SAMPLE_DOC, type Concept, type SampleDoc } from '../lib/sampleDoc';
 
 type Tab = 'summary' | 'map' | 'cards';
@@ -19,6 +21,7 @@ export default function StudyPage() {
   const [tab, setTab] = useState<Tab>('summary');
   const [drawer, setDrawer] = useState<Concept | null>(null);
   const [fullscreen, setFullscreen] = useState(false);
+  const [chatOpen, setChatOpen] = useState(false);
 
   const isSample = !id || id === 'sample';
   const docQuery = useDocument(isSample ? undefined : id);
@@ -55,6 +58,28 @@ export default function StudyPage() {
       <PGNav
         left={<PGIconBtn icon={<Icon.ArrowLeft s={18} />} onClick={goBack} />}
         title="Study guide"
+        right={
+          <button
+            type="button"
+            aria-label="Chat with Sage about this guide"
+            onClick={() => setChatOpen(true)}
+            style={{
+              width: 42,
+              height: 42,
+              borderRadius: 14,
+              background: 'var(--surface)',
+              border: '2px solid var(--hairline-strong)',
+              boxShadow: '0 3px 0 var(--hairline-strong)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer',
+              padding: 0,
+            }}
+          >
+            <Sage pose="happy" size={28} animated={false} />
+          </button>
+        }
       />
 
       <div style={{ padding: '16px 20px 10px', display: 'flex', flexDirection: 'column', gap: 14 }}>
@@ -208,8 +233,27 @@ export default function StudyPage() {
       </div>
 
       <ConceptDrawer concept={drawer} concepts={doc.concepts} onClose={() => setDrawer(null)} onSelect={setDrawer} />
+
+      <SageChat
+        open={chatOpen}
+        onClose={() => setChatOpen(false)}
+        context={buildChatContext(doc)}
+      />
     </div>
   );
+}
+
+function buildChatContext(doc: SampleDoc): ChatContext {
+  return {
+    title: doc.title,
+    source: doc.source,
+    summary: doc.summary.join(' ').slice(0, 3500),
+    concepts: doc.concepts
+      .slice(0, 24)
+      .map((c) => `${c.term}: ${c.def}`)
+      .join(' | ')
+      .slice(0, 1800),
+  };
 }
 
 function FlashcardsView({ doc }: { doc: SampleDoc }) {

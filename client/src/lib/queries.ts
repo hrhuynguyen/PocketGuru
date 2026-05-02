@@ -120,17 +120,23 @@ export function useDeleteDocument(): UseMutationResult<void, Error, { id: string
 
 export type ChatRole = 'user' | 'assistant';
 export type ChatMessage = { role: ChatRole; content: string };
+export type ChatContext = {
+  title?: string;
+  source?: string;
+  summary?: string;
+  concepts?: string;
+};
 
 export function useSageChat(): UseMutationResult<
   { reply: string },
   Error,
-  { messages: ChatMessage[] }
+  { messages: ChatMessage[]; context?: ChatContext }
 > {
   return useMutation({
-    mutationFn: ({ messages }) =>
+    mutationFn: ({ messages, context }) =>
       apiFetch<{ reply: string }>('/chat', {
         method: 'POST',
-        body: JSON.stringify({ messages }),
+        body: JSON.stringify(context ? { messages, context } : { messages }),
         headers: { 'Content-Type': 'application/json' },
       }),
   });

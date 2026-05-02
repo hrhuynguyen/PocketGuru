@@ -179,17 +179,6 @@ export default function CapturePage() {
               </h1>
             </div>
           </div>
-          <div style={{ marginTop: 14 }}>
-            <PGButton
-              variant="primary"
-              size="md"
-              icon={<Icon.Sparkle s={16} />}
-              fullWidth
-              onClick={() => navigate('/chat')}
-            >
-              Chat with Sage
-            </PGButton>
-          </div>
         </div>
 
         <div style={{ padding: '20px 16px 24px' }}>
@@ -574,17 +563,19 @@ function RecentDocCard({
             setMenuOpen((v) => !v);
           }}
           style={{
-            width: 32,
-            height: 32,
+            width: 36,
+            height: 36,
             borderRadius: 10,
-            background: 'transparent',
-            border: 0,
-            color: 'var(--ink-3)',
+            background: 'var(--surface-2)',
+            border: '2px solid var(--hairline-strong)',
+            boxShadow: '0 2px 0 var(--hairline-strong)',
+            color: 'var(--ink)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             cursor: 'pointer',
             padding: 0,
+            flexShrink: 0,
           }}
         >
           <Icon.MoreVertical s={18} />
